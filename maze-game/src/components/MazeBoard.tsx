@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { Cell, Position } from '../types';
 
 interface MazeBoardProps {
@@ -11,23 +11,35 @@ interface MazeBoardProps {
 const MazeBoard: React.FC<MazeBoardProps> = ({ grid, playerPos, goalPos, cellSize }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef({
-    offsetX: 0,
-    offsetY: 0,
-    width: 0,
-    height: 0,
-  });
+  const animationRef = useRef<number | undefined>(undefined);
 
   const rows = grid.length;
   const cols = grid[0]?.length || 0;
-  const totalWidth = cols * cellSize;
-  const totalHeight = rows * cellSize;
+  const rawTotalWidth = cols * cellSize;
+  const rawTotalHeight = rows * cellSize;
+
+  const maxContainerSize = useMemo(() => {
+    return Math.min(600, window.innerWidth - 80);
+  }, []);
+
+  const { scale, displayWidth, displayHeight } = useMemo(() => {
+    const scaleX = maxContainerSize / rawTotalWidth;
+    const scaleY = maxContainerSize / rawTotalHeight;
+    
+    const scale = Math.min(scaleX, scaleY, 1);
+    
+    return {
+      scale,
+      displayWidth: rawTotalWidth * scale,
+      displayHeight: rawTotalHeight * scale,
+    };
+  }, [rawTotalWidth, rawTotalHeight, maxContainerSize]);
 
   const wallColor = '#2196F3';
   const pathColor = '#FFFDE7';
   const playerColor = '#FF4081';
   const goalColor = '#69F0AE';
-  const wallWidth = Math.max(2, cellSize * 0.1);
+  const wallWidth = Math.max(1, cellSize * 0.1);
 
   const drawMaze = useCallback(() => {
     const canvas = canvasRef.current;
@@ -36,15 +48,19 @@ const MazeBoard: React.FC<MazeBoardProps> = ({ grid, playerPos, goalPos, cellSiz
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const viewport = viewportRef.current;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasWidth = Math.ceil(displayWidth);
+    const canvasHeight = Math.ceil(displayHeight);
 
-    const startCol = Math.max(0, Math.floor(viewport.offsetX / cellSize) - 2);
-    const endCol = Math.min(cols, Math.ceil((viewport.offsetX + viewport.width) / cellSize) + 2);
-    const startRow = Math.max(0, Math.floor(viewport.offsetY / cellSize) - 2);
-    const endRow = Math.min(rows, Math.ceil((viewport.offsetY + viewport.height) / cellSize) + 2);
+    canvas.width = canvasWidth * devicePixelRatio;
+    canvas.height = canvasHeight * devicePixelRatio;
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
+
+    ctx.scale(devicePixelRatio * scale, devicePixelRatio * scale);
 
     ctx.fillStyle = pathColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, rawTotalWidth, rawTotalHeight);
 
     ctx.strokeStyle = wallColor;
     ctx.lineWidth = wallWidth;
@@ -53,8 +69,8 @@ const MazeBoard: React.FC<MazeBoardProps> = ({ grid, playerPos, goalPos, cellSiz
 
     ctx.beginPath();
 
-    for (let y = startRow; y < endRow; y++) {
-      for (let x = startCol; x < endCol; x++) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
         const cell = grid[y]?.[x];
         if (!cell) continue;
 
@@ -122,64 +138,70 @@ const MazeBoard: React.FC<MazeBoardProps> = ({ grid, playerPos, goalPos, cellSiz
 
     ctx.fillStyle = 'white';
     ctx.fillText('🐻', playerX, playerY);
-  }, [grid, playerPos, goalPos, cellSize, rows, cols, wallWidth]);
+  }, [grid, playerPos, goalPos, cellSize, rows, cols, wallWidth, scale, displayWidth, displayHeight, rawTotalWidth, rawTotalHeight]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    animationRef.current = requestAnimationFrame(() => {
+      drawMaze();
+    });
 
-    const updateViewport = () => {
-      viewportRef.current = {
-        offsetX: container.scrollLeft,
-        offsetY: container.scrollTop,
-        width: container.clientWidth,
-        height: container.clientHeight,
-      };
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [drawMaze]);
+
+  useEffect(() => {
+    const handleResize = () => {
       drawMaze();
     };
 
-    updateViewport();
-    container.addEventListener('scroll', updateViewport);
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      container.removeEventListener('scroll', updateViewport);
-      window.removeEventListener('resize', updateViewport);
-    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [drawMaze]);
-
-  useEffect(() => {
-    drawMaze();
-  }, [drawMaze]);
-
-  const maxContainerSize = Math.min(600, window.innerWidth - 80);
-  const containerWidth = Math.min(maxContainerSize, totalWidth);
-  const containerHeight = Math.min(maxContainerSize, totalHeight);
-
-  const needsScroll = totalWidth > containerWidth || totalHeight > containerHeight;
 
   return (
     <div
       ref={containerRef}
       style={{
-        width: containerWidth,
-        height: containerHeight,
-        overflow: needsScroll ? 'auto' : 'visible',
+        width: Math.ceil(displayWidth),
+        height: Math.ceil(displayHeight),
         borderRadius: '16px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         position: 'relative',
         background: '#FFFDE7',
+        overflow: 'hidden',
       }}
     >
       <canvas
         ref={canvasRef}
-        width={totalWidth}
-        height={totalHeight}
         style={{
           display: 'block',
           imageRendering: 'auto',
         }}
       />
+      {scale < 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            background: 'rgba(0,0,0,0.6)',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+          }}
+        >
+          {Math.round(scale * 100)}%
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,13 @@
 import { Cell, Position, MazeConfig } from '../types';
 
+type SimpleCell = {
+  x: number;
+  y: number;
+  walls: { top: boolean; right: boolean; bottom: boolean; left: boolean };
+};
+
+type FastGrid = SimpleCell[][];
+
 export class MazeGenerator {
   private rows: number;
   private cols: number;
@@ -12,40 +20,42 @@ export class MazeGenerator {
   }
 
   private initializeGrid(): Cell[][] {
-    const grid: Cell[][] = [];
+    const grid: Cell[][] = new Array(this.rows);
     for (let y = 0; y < this.rows; y++) {
-      const row: Cell[] = [];
+      grid[y] = new Array(this.cols);
       for (let x = 0; x < this.cols; x++) {
-        row.push({
+        grid[y][x] = {
           x,
           y,
           walls: { top: true, right: true, bottom: true, left: true },
           visited: false,
-        });
+        };
       }
-      grid.push(row);
     }
     return grid;
   }
 
-  private getNeighbors(cell: Cell, visited: boolean = false): Cell[] {
+  private getNeighborsFast(
+    cell: Cell,
+    visitedStatus: boolean,
+    dirOrder: number[]
+  ): Cell[] {
     const neighbors: Cell[] = [];
     const { x, y } = cell;
-    const directions = [
-      { dx: 0, dy: -1, name: 'top' },
-      { dx: 1, dy: 0, name: 'right' },
-      { dx: 0, dy: 1, name: 'bottom' },
-      { dx: -1, dy: 0, name: 'left' },
+    const dirs = [
+      { dx: 0, dy: -1 },
+      { dx: 1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: -1, dy: 0 },
     ];
-    
-    const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
 
-    for (const dir of shuffledDirections) {
+    for (const dirIdx of dirOrder) {
+      const dir = dirs[dirIdx];
       const nx = x + dir.dx;
       const ny = y + dir.dy;
       if (nx >= 0 && nx < this.cols && ny >= 0 && ny < this.rows) {
         const neighbor = this.grid[ny][nx];
-        if (visited === neighbor.visited) {
+        if (neighbor.visited === visitedStatus) {
           neighbors.push(neighbor);
         }
       }
@@ -53,32 +63,16 @@ export class MazeGenerator {
     return neighbors;
   }
 
-  private getVisitedNeighbors(cell: Cell): Cell[] {
-    const neighbors: Cell[] = [];
-    const { x, y } = cell;
-    const directions = [
-      { dx: 0, dy: -1, name: 'top' },
-      { dx: 1, dy: 0, name: 'right' },
-      { dx: 0, dy: 1, name: 'bottom' },
-      { dx: -1, dy: 0, name: 'left' },
-    ];
-    
-    const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
-
-    for (const dir of shuffledDirections) {
-      const nx = x + dir.dx;
-      const ny = y + dir.dy;
-      if (nx >= 0 && nx < this.cols && ny >= 0 && ny < this.rows) {
-        const neighbor = this.grid[ny][nx];
-        if (neighbor.visited) {
-          neighbors.push(neighbor);
-        }
-      }
+  private getRandomDirOrder(): number[] {
+    const order = [0, 1, 2, 3];
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
     }
-    return neighbors;
+    return order;
   }
 
-  private removeWalls(current: Cell, next: Cell): void {
+  private removeWallsFast(current: Cell, next: Cell): void {
     const dx = next.x - current.x;
     const dy = next.y - current.y;
 
@@ -97,37 +91,56 @@ export class MazeGenerator {
     }
   }
 
-  private generatePrimMaze(): void {
+  private generatePrimFast(): void {
     const startCell = this.grid[0][0];
     startCell.visited = true;
 
-    const frontier: Cell[] = [...this.getNeighbors(startCell, false)];
+    const frontier: Cell[] = [];
+    const frontierSet = new Set<string>();
+
+    const addToFrontier = (cell: Cell) => {
+      const key = `${cell.x},${cell.y}`;
+      if (!frontierSet.has(key)) {
+        frontierSet.add(key);
+        frontier.push(cell);
+      }
+    };
+
+    const initialDirs = this.getRandomDirOrder();
+    const initialNeighbors = this.getNeighborsFast(startCell, false, initialDirs);
+    for (const n of initialNeighbors) {
+      addToFrontier(n);
+    }
 
     while (frontier.length > 0) {
       const randomIndex = Math.floor(Math.random() * frontier.length);
       const current = frontier[randomIndex];
-      frontier.splice(randomIndex, 1);
+      
+      frontier[randomIndex] = frontier[frontier.length - 1];
+      frontier.pop();
+      frontierSet.delete(`${current.x},${current.y}`);
 
       if (current.visited) continue;
 
       current.visited = true;
 
-      const visitedNeighbors = this.getVisitedNeighbors(current);
+      const dirs = this.getRandomDirOrder();
+      const visitedNeighbors = this.getNeighborsFast(current, true, dirs);
+      
       if (visitedNeighbors.length > 0) {
         const neighbor = visitedNeighbors[Math.floor(Math.random() * visitedNeighbors.length)];
-        this.removeWalls(current, neighbor);
+        this.removeWallsFast(current, neighbor);
       }
 
-      const newFrontier = this.getNeighbors(current, false);
+      const newDirs = this.getRandomDirOrder();
+      const newFrontier = this.getNeighborsFast(current, false, newDirs);
       for (const cell of newFrontier) {
-        if (!frontier.includes(cell)) {
-          frontier.push(cell);
-        }
+        addToFrontier(cell);
       }
     }
   }
 
-  private generateBranchFactorMaze(): void {
+  private generateBranchFactorFast(): void {
     const stack: Cell[] = [];
     const startCell = this.grid[0][0];
     startCell.visited = true;
@@ -136,7 +149,9 @@ export class MazeGenerator {
     while (stack.length > 0) {
       const randomIndex = Math.floor(Math.random() * stack.length);
       const current = stack[randomIndex];
-      const neighbors = this.getNeighbors(current, false);
+      
+      const dirs = this.getRandomDirOrder();
+      const neighbors = this.getNeighborsFast(current, false, dirs);
 
       if (neighbors.length > 0) {
         const numBranches = Math.min(
@@ -144,125 +159,65 @@ export class MazeGenerator {
           Math.floor(Math.random() * 3) + 1
         );
 
-        for (let i = 0; i < numBranches; i++) {
+        for (let i = 0; i < numBranches && neighbors.length > 0; i++) {
           const nextIndex = Math.floor(Math.random() * neighbors.length);
           const next = neighbors[nextIndex];
-          neighbors.splice(nextIndex, 1);
+          
+          neighbors[nextIndex] = neighbors[neighbors.length - 1];
+          neighbors.pop();
 
           next.visited = true;
-          this.removeWalls(current, next);
+          this.removeWallsFast(current, next);
           stack.push(next);
         }
       } else {
-        stack.splice(randomIndex, 1);
+        stack[randomIndex] = stack[stack.length - 1];
+        stack.pop();
       }
     }
   }
 
-  private addExtraBranches(): void {
-    const allCells: Cell[] = [];
-    for (let y = 0; y < this.rows; y++) {
-      for (let x = 0; x < this.cols; x++) {
-        allCells.push(this.grid[y][x]);
-      }
-    }
-
-    const numExtraPaths = Math.floor((this.rows * this.cols) * 0.08);
-    
-    for (let i = 0; i < numExtraPaths; i++) {
-      const cell = allCells[Math.floor(Math.random() * allCells.length)];
-      const neighbors = this.getAllNeighbors(cell);
-      
-      if (neighbors.length > 0) {
-        const neighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
-        this.removeWalls(cell, neighbor);
-      }
-    }
-  }
-
-  private getAllNeighbors(cell: Cell): Cell[] {
-    const neighbors: Cell[] = [];
-    const { x, y } = cell;
-
-    if (y > 0) neighbors.push(this.grid[y - 1][x]);
-    if (x < this.cols - 1) neighbors.push(this.grid[y][x + 1]);
-    if (y < this.rows - 1) neighbors.push(this.grid[y + 1][x]);
-    if (x > 0) neighbors.push(this.grid[y][x - 1]);
-
-    return neighbors;
-  }
-
-  private createDeadEnds(): void {
+  private addExtraBranchesFast(): void {
     const totalCells = this.rows * this.cols;
-    
-    if (totalCells < 100) return;
-    
-    const wallsToAdd = Math.floor(totalCells * 0.05);
-    let added = 0;
-    
-    for (let attempt = 0; attempt < wallsToAdd * 10 && added < wallsToAdd; attempt++) {
-      const x = Math.floor(Math.random() * (this.cols - 2)) + 1;
-      const y = Math.floor(Math.random() * (this.rows - 2)) + 1;
+    const numExtraPaths = Math.floor(totalCells * 0.06);
+
+    for (let i = 0; i < numExtraPaths; i++) {
+      const x = Math.floor(Math.random() * this.cols);
+      const y = Math.floor(Math.random() * this.rows);
       const cell = this.grid[y][x];
-      
-      const directions = ['top', 'right', 'bottom', 'left'] as const;
-      const randomDir = directions[Math.floor(Math.random() * 4)];
-      
-      if (!cell.walls[randomDir]) {
-        cell.walls[randomDir] = true;
+
+      const dirs = this.getRandomDirOrder();
+      const directions = [
+        { dx: 0, dy: -1, wall: 'top' as const, opposite: 'bottom' as const },
+        { dx: 1, dy: 0, wall: 'right' as const, opposite: 'left' as const },
+        { dx: 0, dy: 1, wall: 'bottom' as const, opposite: 'top' as const },
+        { dx: -1, dy: 0, wall: 'left' as const, opposite: 'right' as const },
+      ];
+
+      for (const dirIdx of dirs) {
+        const dir = directions[dirIdx];
+        const nx = x + dir.dx;
+        const ny = y + dir.dy;
         
-        if (this.isMazeSolvable()) {
-          added++;
-        } else {
-          cell.walls[randomDir] = false;
+        if (nx >= 0 && nx < this.cols && ny >= 0 && ny < this.rows) {
+          const neighbor = this.grid[ny][nx];
+          if (cell.walls[dir.wall]) {
+            cell.walls[dir.wall] = false;
+            neighbor.walls[dir.opposite] = false;
+            break;
+          }
         }
       }
     }
   }
 
-  private isMazeSolvable(): boolean {
-    const visited = new Set<string>();
-    const queue: { x: number; y: number }[] = [{ x: 0, y: 0 }];
-    const goalX = this.cols - 1;
-    const goalY = this.rows - 1;
+  private addCyclePathsFast(): void {
+    const numCycles = Math.floor(Math.random() * 4) + 3;
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const key = `${current.x},${current.y}`;
-
-      if (current.x === goalX && current.y === goalY) {
-        return true;
-      }
-
-      if (visited.has(key)) continue;
-      visited.add(key);
-
-      const cell = this.grid[current.y][current.x];
-
-      if (!cell.walls.top && current.y > 0) {
-        queue.push({ x: current.x, y: current.y - 1 });
-      }
-      if (!cell.walls.right && current.x < this.cols - 1) {
-        queue.push({ x: current.x + 1, y: current.y });
-      }
-      if (!cell.walls.bottom && current.y < this.rows - 1) {
-        queue.push({ x: current.x, y: current.y + 1 });
-      }
-      if (!cell.walls.left && current.x > 0) {
-        queue.push({ x: current.x - 1, y: current.y });
-      }
-    }
-
-    return false;
-  }
-
-  private addCyclePaths(): void {
-    const numCycles = Math.floor(Math.random() * 3) + 2;
-    
     for (let i = 0; i < numCycles; i++) {
-      const startX = Math.floor(Math.random() * (this.cols - 3)) + 1;
-      const startY = Math.floor(Math.random() * (this.rows - 3)) + 1;
-      
+      const startX = Math.floor(Math.random() * Math.max(1, this.cols - 4)) + 1;
+      const startY = Math.floor(Math.random() * Math.max(1, this.rows - 4)) + 1;
+
       const directions = [
         { dx: 0, dy: -1, wall: 'top' as const, opposite: 'bottom' as const },
         { dx: 1, dy: 0, wall: 'right' as const, opposite: 'left' as const },
@@ -273,11 +228,11 @@ export class MazeGenerator {
       for (const dir of directions) {
         const nx = startX + dir.dx;
         const ny = startY + dir.dy;
-        
+
         if (nx >= 0 && nx < this.cols && ny >= 0 && ny < this.rows) {
           const cell = this.grid[startY][startX];
           const neighbor = this.grid[ny][nx];
-          
+
           if (cell.walls[dir.wall] && Math.random() > 0.5) {
             cell.walls[dir.wall] = false;
             neighbor.walls[dir.opposite] = false;
@@ -287,26 +242,37 @@ export class MazeGenerator {
     }
   }
 
+  private isLargeMaze(): boolean {
+    return this.rows * this.cols > 500;
+  }
+
+  private isHugeMaze(): boolean {
+    return this.rows * this.cols > 5000;
+  }
+
   generate(): Cell[][] {
     this.grid = this.initializeGrid();
+    const isLarge = this.isLargeMaze();
+    const isHuge = this.isHugeMaze();
 
     const algorithm = Math.random();
-    
-    if (algorithm < 0.4) {
-      this.generatePrimMaze();
-    } else if (algorithm < 0.7) {
-      this.generateBranchFactorMaze();
+
+    if (isHuge) {
+      this.generateBranchFactorFast();
+    } else if (algorithm < 0.5) {
+      this.generatePrimFast();
     } else {
-      this.generatePrimMaze();
-      this.addExtraBranches();
+      this.generateBranchFactorFast();
     }
 
-    if (this.rows * this.cols > 50) {
-      this.addCyclePaths();
-    }
-
-    if (this.rows * this.cols > 100) {
-      this.createDeadEnds();
+    if (!isHuge) {
+      if (this.rows * this.cols > 50) {
+        this.addCyclePathsFast();
+      }
+      
+      if (this.rows * this.cols > 100 && !isLarge) {
+        this.addExtraBranchesFast();
+      }
     }
 
     return this.grid;

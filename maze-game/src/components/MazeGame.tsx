@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Cell, Position, Difficulty, DIFFICULTY_CONFIG, CUSTOM_SIZE_CONFIG, CustomSize } from '../types';
 import { MazeGenerator } from '../utils/mazeGenerator';
 import MazeBoard from './MazeBoard';
@@ -17,6 +17,7 @@ const MazeGame: React.FC = () => {
   const [isWon, setIsWon] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const mazeConfig = useMemo(() => {
     if (difficulty === 'custom') {
@@ -30,26 +31,56 @@ const MazeGame: React.FC = () => {
     return DIFFICULTY_CONFIG[difficulty];
   }, [difficulty, customSize]);
 
+  const totalCells = mazeConfig.rows * mazeConfig.cols;
+  const isLargeMaze = totalCells > 500;
+  const isHugeMaze = totalCells > 5000;
+
   const cellSize = useMemo(() => {
+    if (isHugeMaze) {
+      return Math.max(10, 15);
+    }
+    if (isLargeMaze) {
+      return Math.max(15, 20);
+    }
     const maxWidth = Math.min(600, window.innerWidth - 80);
     return Math.min(35, Math.floor(maxWidth / mazeConfig.cols));
-  }, [mazeConfig.cols]);
+  }, [mazeConfig.cols, isLargeMaze, isHugeMaze]);
 
-  const initGame = useCallback(() => {
-    const mazeGenerator = new MazeGenerator({
-      rows: mazeConfig.rows,
-      cols: mazeConfig.cols,
-      difficulty,
+  const generateMazeAsync = useCallback(() => {
+    return new Promise<Cell[][]>((resolve) => {
+      const generator = new MazeGenerator({
+        rows: mazeConfig.rows,
+        cols: mazeConfig.cols,
+        difficulty,
+      });
+
+      if (isHugeMaze) {
+        requestIdleCallback(() => {
+          const result = generator.generate();
+          resolve(result);
+        });
+      } else {
+        const result = generator.generate();
+        resolve(result);
+      }
     });
+  }, [difficulty, mazeConfig, isHugeMaze]);
+
+  const initGame = useCallback(async () => {
+    setIsGenerating(true);
     
-    const newGrid = mazeGenerator.generate();
-    setGrid(newGrid);
-    setPlayerPos({ x: 0, y: 0 });
-    setGoalPos({ x: mazeConfig.cols - 1, y: mazeConfig.rows - 1 });
-    setIsWon(false);
-    setMoveCount(0);
-    setShowCelebration(false);
-  }, [difficulty, mazeConfig]);
+    try {
+      const newGrid = await generateMazeAsync();
+      setGrid(newGrid);
+      setPlayerPos({ x: 0, y: 0 });
+      setGoalPos({ x: mazeConfig.cols - 1, y: mazeConfig.rows - 1 });
+      setIsWon(false);
+      setMoveCount(0);
+      setShowCelebration(false);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [generateMazeAsync, mazeConfig]);
 
   useEffect(() => {
     initGame();
@@ -57,12 +88,6 @@ const MazeGame: React.FC = () => {
 
   const handleMove = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (isWon || grid.length === 0) return;
-
-    const mazeGenerator = new MazeGenerator({
-      rows: mazeConfig.rows,
-      cols: mazeConfig.cols,
-      difficulty,
-    });
 
     let newPos = { ...playerPos };
     
@@ -81,7 +106,19 @@ const MazeGame: React.FC = () => {
         break;
     }
 
-    if (mazeGenerator.canMove(playerPos, newPos, grid)) {
+    const fromCell = grid[playerPos.y]?.[playerPos.x];
+    if (!fromCell) return;
+
+    let canMove = false;
+    const dx = newPos.x - playerPos.x;
+    const dy = newPos.y - playerPos.y;
+
+    if (dx === 1) canMove = !fromCell.walls.right;
+    else if (dx === -1) canMove = !fromCell.walls.left;
+    else if (dy === 1) canMove = !fromCell.walls.bottom;
+    else if (dy === -1) canMove = !fromCell.walls.top;
+
+    if (canMove) {
       setPlayerPos(newPos);
       setMoveCount(prev => prev + 1);
 
@@ -90,7 +127,7 @@ const MazeGame: React.FC = () => {
         setShowCelebration(true);
       }
     }
-  }, [isWon, grid, playerPos, goalPos, mazeConfig, difficulty]);
+  }, [isWon, grid, playerPos, goalPos]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -200,6 +237,16 @@ const MazeGame: React.FC = () => {
         }}>
           帮助小熊找到星星吧！
         </p>
+        {isHugeMaze && (
+          <p style={{
+            fontSize: '14px',
+            color: 'rgba(255,255,255,0.8)',
+            margin: '4px 0 0 0',
+            fontStyle: 'italic',
+          }}>
+            ⚡ 超级迷宫模式: {totalCells.toLocaleString()} 个格子
+          </p>
+        )}
       </div>
 
       <div style={{
@@ -214,7 +261,7 @@ const MazeGame: React.FC = () => {
           customSize={customSize}
           onSelect={handleDifficultyChange}
           onCustomSizeChange={handleCustomSizeChange}
-          disabled={isWon}
+          disabled={isWon || isGenerating}
         />
 
         <div style={{
@@ -256,7 +303,40 @@ const MazeGame: React.FC = () => {
           </div>
         </div>
 
-        {grid.length > 0 && (
+        {isGenerating ? (
+          <div style={{
+            padding: '60px 80px',
+            background: 'rgba(255,255,255,0.95)',
+            borderRadius: '24px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+            <div style={{
+              fontSize: '48px',
+              animation: 'spin 1s linear infinite',
+            }}>
+              🔄
+            </div>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#9C27B0',
+            }}>
+              正在生成迷宫...
+            </div>
+            {isHugeMaze && (
+              <div style={{
+                fontSize: '14px',
+                color: '#666',
+              }}>
+                超大迷宫需要一点时间，请耐心等待 ⏳
+              </div>
+            )}
+          </div>
+        ) : grid.length > 0 && (
           <div style={{
             padding: '20px',
             background: 'rgba(255,255,255,0.95)',
@@ -272,40 +352,50 @@ const MazeGame: React.FC = () => {
           </div>
         )}
 
-        {!isWon && (
+        {!isWon && !isGenerating && (
           <ControlButtons 
             onMove={handleMove} 
-            disabled={isWon}
+            disabled={isWon || isGenerating}
           />
         )}
 
         <button
           onClick={initGame}
+          disabled={isGenerating}
           style={{
             padding: '18px 48px',
             fontSize: '22px',
             fontWeight: 'bold',
             color: 'white',
-            background: 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
+            background: isGenerating 
+              ? '#999' 
+              : 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
             border: 'none',
             borderRadius: '50px',
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(255,107,107,0.4)',
+            cursor: isGenerating ? 'not-allowed' : 'pointer',
+            boxShadow: isGenerating 
+              ? 'none' 
+              : '0 8px 24px rgba(255,107,107,0.4)',
             transition: 'all 0.3s ease',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
+            opacity: isGenerating ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.05)';
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(255,107,107,0.5)';
+            if (!isGenerating) {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(255,107,107,0.5)';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,107,107,0.4)';
+            if (!isGenerating) {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,107,107,0.4)';
+            }
           }}
         >
-          🔄 重新开始
+          {isGenerating ? '⏳ 生成中...' : '🔄 重新开始'}
         </button>
 
         {isWon && showCelebration && (
@@ -409,6 +499,11 @@ const MazeGame: React.FC = () => {
             transform: scale(1);
             opacity: 1;
           }
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

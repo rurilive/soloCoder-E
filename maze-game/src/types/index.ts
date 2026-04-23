@@ -37,6 +37,6 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, { rows: number; cols: number;
 
 export const CUSTOM_SIZE_CONFIG = {
   min: 3,
-  max: 25,
-  default: 15,
+  max: Number.MAX_SAFE_INTEGER,
+  default: 20,
 };

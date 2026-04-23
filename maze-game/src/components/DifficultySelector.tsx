@@ -36,12 +36,12 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
     
     if (type === 'rows') {
       setLocalRows(value);
-      if (numValue >= CUSTOM_SIZE_CONFIG.min && numValue <= CUSTOM_SIZE_CONFIG.max) {
+      if (numValue >= CUSTOM_SIZE_CONFIG.min) {
         onCustomSizeChange({ ...customSize, rows: numValue });
       }
     } else {
       setLocalCols(value);
-      if (numValue >= CUSTOM_SIZE_CONFIG.min && numValue <= CUSTOM_SIZE_CONFIG.max) {
+      if (numValue >= CUSTOM_SIZE_CONFIG.min) {
         onCustomSizeChange({ ...customSize, cols: numValue });
       }
     }
@@ -52,7 +52,6 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
     let numValue = parseInt(value) || CUSTOM_SIZE_CONFIG.default;
     
     if (numValue < CUSTOM_SIZE_CONFIG.min) numValue = CUSTOM_SIZE_CONFIG.min;
-    if (numValue > CUSTOM_SIZE_CONFIG.max) numValue = CUSTOM_SIZE_CONFIG.max;
     
     if (type === 'rows') {
       setLocalRows(numValue.toString());
@@ -124,7 +123,7 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
               <span>{config.label}</span>
               <span style={{ fontSize: '12px', fontWeight: 'normal' }}>
                 {difficulty === 'custom' 
-                  ? `自定义 (${CUSTOM_SIZE_CONFIG.min}-${CUSTOM_SIZE_CONFIG.max})` 
+                  ? `自定义 (${CUSTOM_SIZE_CONFIG.min}+ 无上限)` 
                   : `${config.rows}x${config.cols}`}
               </span>
             </button>
@@ -174,13 +173,12 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
               <input
                 type="number"
                 min={CUSTOM_SIZE_CONFIG.min}
-                max={CUSTOM_SIZE_CONFIG.max}
                 value={localRows}
                 onChange={(e) => handleSizeInput('rows', e.target.value)}
                 onBlur={() => handleSizeBlur('rows')}
                 disabled={disabled}
                 style={{
-                  width: '100px',
+                  width: '120px',
                   padding: '12px 16px',
                   fontSize: '20px',
                   fontWeight: 'bold',
@@ -218,13 +216,12 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
               <input
                 type="number"
                 min={CUSTOM_SIZE_CONFIG.min}
-                max={CUSTOM_SIZE_CONFIG.max}
                 value={localCols}
                 onChange={(e) => handleSizeInput('cols', e.target.value)}
                 onBlur={() => handleSizeBlur('cols')}
                 disabled={disabled}
                 style={{
-                  width: '100px',
+                  width: '120px',
                   padding: '12px 16px',
                   fontSize: '20px',
                   fontWeight: 'bold',
@@ -246,7 +243,7 @@ const DifficultySelector: React.FC<DifficultySelectorProps> = ({
             marginTop: '12px',
             fontStyle: 'italic',
           }}>
-            💡 提示：数值越大迷宫越难！范围：{CUSTOM_SIZE_CONFIG.min} - {CUSTOM_SIZE_CONFIG.max}
+            💡 提示：数值越大迷宫越难！最小：{CUSTOM_SIZE_CONFIG.min}，无上限！
           </div>
         </div>
       )}

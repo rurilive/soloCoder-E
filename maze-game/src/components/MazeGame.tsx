@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Cell, Position, Difficulty, DIFFICULTY_CONFIG } from '../types';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Cell, Position, Difficulty, DIFFICULTY_CONFIG, CUSTOM_SIZE_CONFIG, CustomSize } from '../types';
 import { MazeGenerator } from '../utils/mazeGenerator';
 import MazeBoard from './MazeBoard';
 import ControlButtons from './ControlButtons';
@@ -7,6 +7,10 @@ import DifficultySelector from './DifficultySelector';
 
 const MazeGame: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [customSize, setCustomSize] = useState<CustomSize>({
+    rows: CUSTOM_SIZE_CONFIG.default,
+    cols: CUSTOM_SIZE_CONFIG.default,
+  });
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [playerPos, setPlayerPos] = useState<Position>({ x: 0, y: 0 });
   const [goalPos, setGoalPos] = useState<Position>({ x: 0, y: 0 });
@@ -14,24 +18,38 @@ const MazeGame: React.FC = () => {
   const [moveCount, setMoveCount] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  const config = DIFFICULTY_CONFIG[difficulty];
-  const cellSize = Math.min(40, Math.floor(320 / config.cols));
+  const mazeConfig = useMemo(() => {
+    if (difficulty === 'custom') {
+      return {
+        rows: customSize.rows,
+        cols: customSize.cols,
+        label: `自定义 (${customSize.rows}×${customSize.cols})`,
+        color: DIFFICULTY_CONFIG.custom.color,
+      };
+    }
+    return DIFFICULTY_CONFIG[difficulty];
+  }, [difficulty, customSize]);
+
+  const cellSize = useMemo(() => {
+    const maxWidth = Math.min(600, window.innerWidth - 80);
+    return Math.min(35, Math.floor(maxWidth / mazeConfig.cols));
+  }, [mazeConfig.cols]);
 
   const initGame = useCallback(() => {
     const mazeGenerator = new MazeGenerator({
-      rows: config.rows,
-      cols: config.cols,
+      rows: mazeConfig.rows,
+      cols: mazeConfig.cols,
       difficulty,
     });
     
     const newGrid = mazeGenerator.generate();
     setGrid(newGrid);
     setPlayerPos({ x: 0, y: 0 });
-    setGoalPos({ x: config.cols - 1, y: config.rows - 1 });
+    setGoalPos({ x: mazeConfig.cols - 1, y: mazeConfig.rows - 1 });
     setIsWon(false);
     setMoveCount(0);
     setShowCelebration(false);
-  }, [difficulty, config]);
+  }, [difficulty, mazeConfig]);
 
   useEffect(() => {
     initGame();
@@ -41,8 +59,8 @@ const MazeGame: React.FC = () => {
     if (isWon || grid.length === 0) return;
 
     const mazeGenerator = new MazeGenerator({
-      rows: config.rows,
-      cols: config.cols,
+      rows: mazeConfig.rows,
+      cols: mazeConfig.cols,
       difficulty,
     });
 
@@ -72,7 +90,7 @@ const MazeGame: React.FC = () => {
         setShowCelebration(true);
       }
     }
-  }, [isWon, grid, playerPos, goalPos, config, difficulty]);
+  }, [isWon, grid, playerPos, goalPos, mazeConfig, difficulty]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -110,6 +128,10 @@ const MazeGame: React.FC = () => {
 
   const handleDifficultyChange = (newDifficulty: Difficulty) => {
     setDifficulty(newDifficulty);
+  };
+
+  const handleCustomSizeChange = (size: CustomSize) => {
+    setCustomSize(size);
   };
 
   const celebrationEmojis = ['🎉', '🎊', '🌟', '✨', '🎈', '🏆', '💖', '🌈'];
@@ -189,7 +211,9 @@ const MazeGame: React.FC = () => {
       }}>
         <DifficultySelector 
           currentDifficulty={difficulty}
+          customSize={customSize}
           onSelect={handleDifficultyChange}
+          onCustomSizeChange={handleCustomSizeChange}
           disabled={isWon}
         />
 
@@ -228,7 +252,7 @@ const MazeGame: React.FC = () => {
             color: '#333',
           }}>
             <span>🎯</span>
-            <span>难度: {config.label}</span>
+            <span>难度: {mazeConfig.label}</span>
           </div>
         </div>
 

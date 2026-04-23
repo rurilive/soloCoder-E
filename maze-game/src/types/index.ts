@@ -1,4 +1,4 @@
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
 export type Cell = {
   x: number;
@@ -17,6 +17,11 @@ export type Position = {
   y: number;
 };
 
+export type CustomSize = {
+  rows: number;
+  cols: number;
+};
+
 export type MazeConfig = {
   rows: number;
   cols: number;
@@ -27,4 +32,11 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, { rows: number; cols: number;
   easy: { rows: 5, cols: 5, label: '简单', color: '#4CAF50' },
   medium: { rows: 7, cols: 7, label: '中等', color: '#FF9800' },
   hard: { rows: 10, cols: 10, label: '困难', color: '#F44336' },
+  custom: { rows: 0, cols: 0, label: '自定义', color: '#9C27B0' },
+};
+
+export const CUSTOM_SIZE_CONFIG = {
+  min: 3,
+  max: 25,
+  default: 15,
 };

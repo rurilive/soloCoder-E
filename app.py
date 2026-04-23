@@ -109,5 +109,53 @@ def reset():
     )
 
 
+@app.route("/export", methods=["POST"])
+def export_grid():
+    user_grid = request.json.get("grid")
+    if not user_grid:
+        user_grid = session.get("grid", [[0]*9 for _ in range(9)])
+    
+    export_data = {
+        "current_grid": user_grid,
+        "initial_grid": session.get("initial_grid"),
+        "solution": session.get("solution"),
+        "difficulty": session.get("difficulty"),
+        "format": "9x9 array (0 = empty, 1-9 = filled)",
+        "rows": [
+            f"第{i+1}行: {user_grid[i]}" for i in range(9)
+        ]
+    }
+    
+    return jsonify({
+        "success": True,
+        "json_format": export_data,
+        "copy_paste_format": {
+            "grid": user_grid,
+            "note": "将此数据复制给我检查，格式为 9x9 数组，0 表示空格"
+        }
+    })
+
+
+@app.route("/debug/solution", methods=["GET"])
+def debug_solution():
+    if "solution" not in session:
+        return jsonify({"success": False, "message": "没有活动的游戏"})
+    
+    solution = session.get("solution")
+    initial = session.get("initial_grid")
+    
+    return jsonify({
+        "success": True,
+        "solution": solution,
+        "initial_grid": initial,
+        "solution_formatted": [
+            f"第{i+1}行: {solution[i]}" for i in range(9)
+        ],
+        "initial_formatted": [
+            f"第{i+1}行: {initial[i]}" for i in range(9)
+        ]
+    })
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

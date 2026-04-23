@@ -109,8 +109,25 @@ class Sudoku:
                     return False
         return True
 
+    def _has_conflict(self, grid, row, col, num):
+        for j in range(9):
+            if j != col and grid[row][j] == num:
+                return True
+        for i in range(9):
+            if i != row and grid[i][col] == num:
+                return True
+        start_row, start_col = 3 * (row // 3), 3 * (col // 3)
+        for i in range(3):
+            for j in range(3):
+                r, c = start_row + i, start_col + j
+                if (r != row or c != col) and grid[r][c] == num:
+                    return True
+        return False
+
     def validate(self, user_grid):
         errors = []
+        conflict_cells = set()
+
         for i in range(9):
             for j in range(9):
                 if user_grid[i][j] == 0:
@@ -118,20 +135,28 @@ class Sudoku:
                 if user_grid[i][j] < 1 or user_grid[i][j] > 9:
                     errors.append({"row": i, "col": j, "type": "invalid_value"})
                     continue
-                if not self._is_valid_move_grid(user_grid, i, j, user_grid[i][j]):
-                    errors.append({"row": i, "col": j, "type": "conflict"})
+                if self._has_conflict(user_grid, i, j, user_grid[i][j]):
+                    conflict_cells.add((i, j))
+
+        for i, j in conflict_cells:
+            errors.append({"row": i, "col": j, "type": "conflict"})
 
         is_complete = all(
             user_grid[i][j] != 0 for i in range(9) for j in range(9)
         )
-        is_correct = len(errors) == 0 and is_complete
 
+        wrong_answer_cells = set()
         if is_complete:
             for i in range(9):
                 for j in range(9):
                     if user_grid[i][j] != self.solution[i][j]:
-                        errors.append({"row": i, "col": j, "type": "wrong_answer"})
-            is_correct = len(errors) == 0
+                        if (i, j) not in conflict_cells:
+                            wrong_answer_cells.add((i, j))
+
+        for i, j in wrong_answer_cells:
+            errors.append({"row": i, "col": j, "type": "wrong_answer"})
+
+        is_correct = is_complete and len(errors) == 0
 
         return {
             "is_correct": is_correct,

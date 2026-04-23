@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const newGameBtn = document.getElementById('new-game-btn');
     const validateBtn = document.getElementById('validate-btn');
     const hintBtn = document.getElementById('hint-btn');
+    const exportBtn = document.getElementById('export-btn');
     const resetBtn = document.getElementById('reset-btn');
     const difficultySelect = document.getElementById('difficulty');
 
@@ -161,6 +162,38 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             showMessage('获取提示失败', 'error');
+            console.error('Error:', error);
+        });
+    });
+
+    exportBtn.addEventListener('click', function() {
+        const userGrid = getCurrentGrid();
+        
+        fetch('/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ grid: userGrid })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const copyData = data.copy_paste_format;
+                const jsonString = JSON.stringify(copyData, null, 2);
+                
+                navigator.clipboard.writeText(jsonString).then(function() {
+                    showMessage('答案已复制到剪贴板！将数据发给我检查', 'success');
+                    console.log('复制的数据:', jsonString);
+                }).catch(function(err) {
+                    showMessage('请手动复制下方数据', 'warning');
+                    console.log('复制的数据:', jsonString);
+                    prompt('请复制以下数据:', jsonString);
+                });
+            }
+        })
+        .catch(error => {
+            showMessage('导出失败', 'error');
             console.error('Error:', error);
         });
     });

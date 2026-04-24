@@ -78,10 +78,7 @@ class CustomGamePlugin(BaseGamePlugin):
                 status_code=404
             )
         
-        with open(index_html, "r", encoding="utf-8") as f:
-            game_content = f.read()
-        
-        game_content = self._inject_game_context(game_content, self._slug)
+        game_iframe_url = f"/games/iframe/{self._slug}"
         
         return templates.TemplateResponse(
             request,
@@ -89,56 +86,9 @@ class CustomGamePlugin(BaseGamePlugin):
             {
                 "game_name": self._name,
                 "game_slug": self._slug,
-                "game_content": game_content,
+                "game_iframe_url": game_iframe_url,
                 "game_icon": self._icon_emoji,
                 "instructions": self._instructions,
                 "developer": self._developer,
             },
         )
-
-    def _inject_game_context(self, html_content: str, game_slug: str) -> str:
-        base_url = f"/custom-games/{self._game_path}/"
-        base_tag = f'<base href="{base_url}">'
-        
-        inject_script = f"""
-<script>
-window.GAME_SLUG = "{game_slug}";
-window.SUBMIT_SCORE_URL = "/games/submit-score";
-
-window.submitGameScore = async function(score) {{
-    try {{
-        const response = await fetch(window.SUBMIT_SCORE_URL, {{
-            method: 'POST',
-            headers: {{
-                'Content-Type': 'application/json',
-            }},
-            body: JSON.stringify({{
-                game_slug: window.GAME_SLUG,
-                score: score
-            }})
-        }});
-        return await response.json();
-    }} catch (error) {{
-        console.error('Error submitting score:', error);
-        return {{ success: false, error: error.message }};
-    }}
-}};
-</script>
-"""
-        if "</head>" in html_content:
-            if "<base" not in html_content:
-                html_content = html_content.replace("</head>", base_tag + inject_script + "</head>")
-            else:
-                html_content = html_content.replace("</head>", inject_script + "</head>")
-        elif "</body>" in html_content:
-            if "<base" not in html_content:
-                html_content = base_tag + html_content.replace("</body>", inject_script + "</body>")
-            else:
-                html_content = html_content.replace("</body>", inject_script + "</body>")
-        else:
-            if "<base" not in html_content:
-                html_content = base_tag + inject_script + html_content
-            else:
-                html_content = inject_script + html_content
-        
-        return html_content

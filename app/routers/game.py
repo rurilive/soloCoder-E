@@ -7,6 +7,7 @@ from app.database import get_db
 from app.auth import get_current_user, get_current_user_or_401
 from app.plugins.base import GameRegistry
 from app.models import Game as GameModel, Score, User
+from app.config import settings
 from pydantic import BaseModel
 from typing import Optional
 
@@ -70,6 +71,81 @@ async def game_play(
         db.refresh(game)
     
     return await game_plugin.play(request, templates)
+
+
+def _inject_game_context(html_content: str, game_slug: str, game_path: str) -> str:
+    base_url = f"/custom-games/{game_path}/"
+    base_tag = f'<base href="{base_url}">'
+    
+    inject_script = f"""
+<script>
+window.GAME_SLUG = "{game_slug}";
+window.SUBMIT_SCORE_URL = "/games/submit-score";
+
+window.submitGameScore = async function(score) {{
+    try {{
+        const response = await fetch(window.SUBMIT_SCORE_URL, {{
+            method: 'POST',
+            headers: {{
+                'Content-Type': 'application/json',
+            }},
+            body: JSON.stringify({{
+                game_slug: window.GAME_SLUG,
+                score: score
+            }})
+        }});
+        return await response.json();
+    }} catch (error) {{
+        console.error('Error submitting score:', error);
+        return {{ success: false, error: error.message }};
+    }}
+}};
+</script>
+"""
+    if "</head>" in html_content:
+        if "<base" not in html_content:
+            html_content = html_content.replace("</head>", base_tag + inject_script + "</head>")
+        else:
+            html_content = html_content.replace("</head>", inject_script + "</head>")
+    elif "</body>" in html_content:
+        if "<base" not in html_content:
+            html_content = base_tag + html_content.replace("</body>", inject_script + "</body>")
+        else:
+            html_content = html_content.replace("</body>", inject_script + "</body>")
+    else:
+        if "<base" not in html_content:
+            html_content = base_tag + inject_script + html_content
+        else:
+            html_content = inject_script + html_content
+    
+    return html_content
+
+
+@router.get("/iframe/{game_slug}", response_class=HTMLResponse)
+async def game_iframe(
+    game_slug: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    game_plugin = GameRegistry.get(game_slug)
+    if not game_plugin:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if not hasattr(game_plugin, 'game_path') or not game_plugin.game_path:
+        raise HTTPException(status_code=400, detail="This game does not support iframe loading")
+    
+    game_full_path = settings.CUSTOM_GAMES_DIR / game_plugin.game_path
+    index_html = game_full_path / "index.html"
+    
+    if not index_html.exists():
+        raise HTTPException(status_code=404, detail="Game index.html not found")
+    
+    with open(index_html, "r", encoding="utf-8") as f:
+        game_content = f.read()
+    
+    game_content = _inject_game_context(game_content, game_slug, game_plugin.game_path)
+    
+    return HTMLResponse(content=game_content)
 
 
 @router.post("/submit-score")

@@ -97,6 +97,9 @@ class CustomGamePlugin(BaseGamePlugin):
         )
 
     def _inject_game_context(self, html_content: str, game_slug: str) -> str:
+        base_url = f"/custom-games/{self._game_path}/"
+        base_tag = f'<base href="{base_url}">'
+        
         inject_script = f"""
 <script>
 window.GAME_SLUG = "{game_slug}";
@@ -123,10 +126,19 @@ window.submitGameScore = async function(score) {{
 </script>
 """
         if "</head>" in html_content:
-            html_content = html_content.replace("</head>", inject_script + "</head>")
+            if "<base" not in html_content:
+                html_content = html_content.replace("</head>", base_tag + inject_script + "</head>")
+            else:
+                html_content = html_content.replace("</head>", inject_script + "</head>")
         elif "</body>" in html_content:
-            html_content = html_content.replace("</body>", inject_script + "</body>")
+            if "<base" not in html_content:
+                html_content = base_tag + html_content.replace("</body>", inject_script + "</body>")
+            else:
+                html_content = html_content.replace("</body>", inject_script + "</body>")
         else:
-            html_content = inject_script + html_content
+            if "<base" not in html_content:
+                html_content = base_tag + inject_script + html_content
+            else:
+                html_content = inject_script + html_content
         
         return html_content

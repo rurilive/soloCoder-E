@@ -78,7 +78,7 @@
                     <div class="form-group">
                         <label>Upload Game Archive *</label>
                         <div class="file-upload-area" id="drop-zone-archive">
-                            <input type="file" id="archive-input" name="archive" accept=".zip,.rar" required disabled>
+                            <input type="file" id="archive-input" name="archive" accept=".zip,.rar" required>
                             <div class="upload-placeholder">
                                 <div class="upload-icon-large">📦</div>
                                 <p>Drag & drop your ZIP or RAR archive here</p>
@@ -99,7 +99,7 @@
                     <div class="form-group">
                         <label>Upload Individual Files *</label>
                         <div class="file-upload-area" id="drop-zone-files">
-                            <input type="file" id="files-input" name="files" multiple accept=".html,.js,.css,.json,.png,.jpg,.jpeg,.gif,.svg,.wav,.mp3,.ogg" disabled>
+                            <input type="file" id="files-input" name="files" multiple accept=".html,.js,.css,.json,.png,.jpg,.jpeg,.gif,.svg,.wav,.mp3,.ogg">
                             <div class="upload-placeholder">
                                 <div class="upload-icon-large">📁</div>
                                 <p>Drag & drop multiple files here</p>
@@ -276,16 +276,14 @@ tabBtns.forEach(btn => {
         uploadMode.value = tab;
         
         if (tab === 'archive') {
-            archiveInput.disabled = false;
-            filesInput.disabled = true;
             filesInput.value = '';
             filesFileList.innerHTML = '';
+            validationState.areFilesValid = false;
         } else {
-            filesInput.disabled = false;
-            archiveInput.disabled = true;
             archiveInput.value = '';
             archiveValidation.style.display = 'none';
             archiveFileList.style.display = 'none';
+            validationState.isArchiveValid = false;
         }
         
         updateSubmitButton();
@@ -308,19 +306,13 @@ function setupDropZone(dropZone, input) {
         dropZone.classList.remove('dragover');
         
         const files = e.dataTransfer.files;
-        if (files.length > 0 && !input.disabled) {
+        if (files.length > 0) {
             const dt = new DataTransfer();
             for (let i = 0; i < files.length; i++) {
                 dt.items.add(files[i]);
             }
             input.files = dt.files;
             input.dispatchEvent(new Event('change'));
-        }
-    });
-    
-    dropZone.addEventListener('click', () => {
-        if (!input.disabled) {
-            input.click();
         }
     });
 }
@@ -626,9 +618,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (content) {
         content.style.display = 'none';
     }
-    
-    archiveInput.disabled = false;
-    filesInput.disabled = true;
 });
 </script>
 

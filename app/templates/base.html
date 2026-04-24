@@ -16,6 +16,15 @@
                 <a href="/leaderboard" class="nav-link">Leaderboard</a>
                 <a href="/battle" class="nav-link">Battle</a>
                 {% if user %}
+                    {% if user.is_developer %}
+                    <div class="nav-dropdown">
+                        <span class="nav-link dropdown-trigger">Dev Tools ▾</span>
+                        <div class="dropdown-menu">
+                            <a href="/games/upload" class="dropdown-item">Upload Game</a>
+                            <a href="/games/my-games" class="dropdown-item">My Games</a>
+                        </div>
+                    </div>
+                    {% endif %}
                     <span class="nav-user">Welcome, {{ user.username }}
                         {% if user.is_developer %} (Dev){% endif %}
                     </span>

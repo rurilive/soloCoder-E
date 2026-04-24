@@ -6,6 +6,11 @@
 <div class="hero">
     <h1>Welcome to Game Platform</h1>
     <p>Play, compete, and have fun with our collection of mini-games!</p>
+    {% if user and user.is_developer %}
+    <div class="hero-actions">
+        <a href="/games/upload" class="btn btn-primary btn-large">Upload Your Game</a>
+    </div>
+    {% endif %}
 </div>
 
 <div class="section">
@@ -14,14 +19,18 @@
         <div class="game-grid">
             {% for game in games %}
                 <div class="game-card">
-                    <div class="game-icon">🎯</div>
+                    <div class="game-icon">{{ game.icon_emoji or '🎯' }}</div>
                     <h3>{{ game.name }}</h3>
-                    <p>{{ game.description }}</p>
+                    <p class="game-developer">by {{ game.developer or 'System' }}</p>
+                    <p class="game-desc">{{ game.description }}</p>
                     <a href="/games/{{ game.slug }}" class="btn btn-primary">Play Now</a>
                     <div class="game-links">
                         <a href="/leaderboard?game={{ game.slug }}">Leaderboard</a>
                         <a href="/reviews/{{ game.slug }}">Reviews</a>
                     </div>
+                    {% if game.is_custom %}
+                    <div class="game-badge custom-badge">User Created</div>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
@@ -48,6 +57,48 @@
             <h3>Reviews & Ratings</h3>
             <p>Rate games and share your feedback with the community!</p>
         </div>
+        <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Create & Upload</h3>
+            <p>Become a developer and share your own games with the world!</p>
+        </div>
     </div>
 </div>
 {% endblock %}
+
+<style>
+.hero-actions {
+    margin-top: 1.5rem;
+}
+
+.game-developer {
+    color: #999;
+    font-size: 0.85rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.game-desc {
+    color: #666;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.game-card {
+    position: relative;
+}
+
+.game-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.custom-badge {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+</style>

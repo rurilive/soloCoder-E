@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     
     COOKIE_NAME: str = "game_platform_session"
     
+    CUSTOM_GAMES_DIR: Path = BASE_DIR / "custom_games"
+    MAX_GAME_SIZE: int = 10 * 1024 * 1024
+    ALLOWED_GAME_EXTENSIONS: list = [".html", ".js", ".css", ".json", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".wav", ".mp3", ".ogg"]
+    
     class Config:
         env_file = ".env"
 

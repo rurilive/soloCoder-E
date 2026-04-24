@@ -20,6 +20,13 @@ class User(Base):
     joined_rooms = relationship("GameRoom", foreign_keys="GameRoom.player2_id", back_populates="player2")
 
 
+class GameStatus:
+    DRAFT = "draft"
+    PENDING_REVIEW = "pending_review"
+    PUBLISHED = "published"
+    REJECTED = "rejected"
+
+
 class Game(Base):
     __tablename__ = "games"
 
@@ -30,9 +37,18 @@ class Game(Base):
     developer = Column(String(100), default="System")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    is_custom = Column(Boolean, default=False)
+    developer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    status = Column(String(20), default=GameStatus.PUBLISHED)
+    game_path = Column(String(500), nullable=True)
+    icon_emoji = Column(String(10), default="🎮")
+    version = Column(String(20), default="1.0.0")
+    instructions = Column(Text, nullable=True)
+
     scores = relationship("Score", back_populates="game")
     reviews = relationship("Review", back_populates="game")
     rooms = relationship("GameRoom", back_populates="game")
+    developer_user = relationship("User", foreign_keys=[developer_id])
 
 
 class Score(Base):

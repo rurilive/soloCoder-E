@@ -1,3 +1,3 @@
-from app.routers import auth, game, leaderboard, review, battle
+from app.routers import auth, game, leaderboard, review, battle, upload
 
-__all__ = ["auth", "game", "leaderboard", "review", "battle"]
+__all__ = ["auth", "game", "leaderboard", "review", "battle", "upload"]

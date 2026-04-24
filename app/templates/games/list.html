@@ -4,24 +4,135 @@
 
 {% block content %}
 <div class="section">
-    <h2>All Games</h2>
+    <div class="section-header">
+        <h2>All Games</h2>
+        {% if user and user.is_developer %}
+        <div class="header-actions">
+            <a href="/games/my-games" class="btn btn-secondary">My Games</a>
+            <a href="/games/upload" class="btn btn-primary">Upload Game</a>
+        </div>
+        {% endif %}
+    </div>
+    
     {% if games %}
         <div class="game-grid">
             {% for game in games %}
                 <div class="game-card">
-                    <div class="game-icon">🎯</div>
+                    <div class="game-icon">{{ game.icon_emoji or '🎯' }}</div>
                     <h3>{{ game.name }}</h3>
-                    <p>{{ game.description }}</p>
+                    <p class="game-developer">by {{ game.developer or 'System' }}</p>
+                    <p class="game-desc">{{ game.description }}</p>
                     <a href="/games/{{ game.slug }}" class="btn btn-primary">Play Now</a>
                     <div class="game-links">
                         <a href="/leaderboard?game={{ game.slug }}">Leaderboard</a>
                         <a href="/reviews/{{ game.slug }}">Reviews</a>
                     </div>
+                    {% if game.is_custom %}
+                    <div class="game-badge custom-badge">User Created</div>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     {% else %}
-        <p>No games available yet. Check back soon!</p>
+        <div class="empty-state">
+            <div class="empty-icon">🎮</div>
+            <h3>No games yet</h3>
+            <p>Check back soon for new games!</p>
+            {% if user and user.is_developer %}
+            <a href="/games/upload" class="btn btn-primary">Upload Your First Game</a>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
 {% endblock %}
+
+<style>
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.game-card {
+    position: relative;
+}
+
+.game-developer {
+    color: #999;
+    font-size: 0.85rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.game-desc {
+    color: #666;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.game-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.custom-badge {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.empty-state p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .header-actions {
+        width: 100%;
+    }
+    
+    .header-actions .btn {
+        flex: 1;
+        text-align: center;
+    }
+}
+</style>

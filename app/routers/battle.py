@@ -22,6 +22,7 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, Dict[int, WebSocket]] = {}
         self.room_states: Dict[str, Dict[str, Any]] = {}
+        self.room_hosts: Dict[str, int] = {}
 
     async def connect(self, websocket: WebSocket, room_code: str, user_id: int):
         await websocket.accept()
@@ -37,6 +38,8 @@ class ConnectionManager:
                 del self.active_connections[room_code]
                 if room_code in self.room_states:
                     del self.room_states[room_code]
+                if room_code in self.room_hosts:
+                    del self.room_hosts[room_code]
 
     async def broadcast_to_room(self, room_code: str, message: Dict[str, Any]):
         if room_code in self.active_connections:
@@ -52,6 +55,12 @@ class ConnectionManager:
             return list(self.active_connections[room_code].keys())
         return []
 
+    def get_room_host(self, room_code: str) -> Optional[int]:
+        return self.room_hosts.get(room_code)
+
+    def set_room_host(self, room_code: str, host_id: int):
+        self.room_hosts[room_code] = host_id
+
     def init_room_state(self, room_code: str, host_id: int):
         self.room_states[room_code] = {
             "status": "waiting",
@@ -59,10 +68,26 @@ class ConnectionManager:
             "game_started": False,
             "time_left": 30,
         }
+        self.room_hosts[room_code] = host_id
+
+    def get_or_init_room_state(self, room_code: str, host_id: int, player2_id: Optional[int] = None) -> Dict[str, Any]:
+        if room_code not in self.room_states:
+            self.room_states[room_code] = {
+                "status": "waiting",
+                "players": {host_id: {"score": 0, "ready": False}},
+                "game_started": False,
+                "time_left": 30,
+            }
+            if player2_id is not None:
+                self.room_states[room_code]["players"][player2_id] = {"score": 0, "ready": False}
+        if room_code not in self.room_hosts:
+            self.room_hosts[room_code] = host_id
+        return self.room_states[room_code]
 
     def add_player_to_state(self, room_code: str, user_id: int):
         if room_code in self.room_states:
-            self.room_states[room_code]["players"][user_id] = {"score": 0, "ready": False}
+            if user_id not in self.room_states[room_code]["players"]:
+                self.room_states[room_code]["players"][user_id] = {"score": 0, "ready": False}
 
     def update_score(self, room_code: str, user_id: int, score: int):
         if room_code in self.room_states:
@@ -271,24 +296,36 @@ async def websocket_endpoint(
     await manager.connect(websocket, invite_code, user_id)
     
     try:
-        room_state = manager.get_room_state(invite_code)
-        if room_state:
-            await manager.broadcast_to_room(
-                invite_code,
-                {
-                    "type": "player_joined",
-                    "user_id": user_id,
-                    "username": username,
-                    "players": manager.get_room_players(invite_code),
-                },
-            )
+        room_state = manager.get_or_init_room_state(
+            invite_code,
+            room.host_id,
+            room.player2_id
+        )
+        
+        await manager.broadcast_to_room(
+            invite_code,
+            {
+                "type": "player_joined",
+                "user_id": user_id,
+                "username": username,
+                "players": manager.get_room_players(invite_code),
+            },
+        )
         
         while True:
             data = await websocket.receive_json()
             message_type = data.get("type")
             
+            room_state = manager.get_room_state(invite_code)
+            if not room_state:
+                continue
+            
             if message_type == "start_game":
-                if room_state:
+                room_host = manager.get_room_host(invite_code)
+                if room_host is None:
+                    room_host = room.host_id
+                
+                if user_id == room_host:
                     room_state["game_started"] = True
                     room_state["status"] = "playing"
                     await manager.broadcast_to_room(

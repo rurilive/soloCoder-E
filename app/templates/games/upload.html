@@ -8,7 +8,10 @@
     
     <div class="upload-container">
         {% if error %}
-        <div class="error-message">{{ error }}</div>
+        <div class="error-message">
+            <strong>❌ Upload Failed</strong>
+            <pre>{{ error }}</pre>
+        </div>
         {% endif %}
         
         <form id="upload-form" method="post" enctype="multipart/form-data" class="upload-form">
@@ -59,27 +62,86 @@
             <div class="form-section">
                 <h3>Game Files</h3>
                 
-                <div class="form-group">
-                    <label for="files">Upload Game Files *</label>
-                    <div class="file-upload-area" id="drop-zone">
-                        <input type="file" id="files" name="files" multiple accept=".html,.js,.css,.json,.png,.jpg,.jpeg,.gif,.svg,.wav,.mp3,.ogg" required>
-                        <div class="upload-placeholder">
-                            <div class="upload-icon">📁</div>
-                            <p>Drag & drop files here or click to browse</p>
-                            <p class="upload-hint">Must include <strong>index.html</strong> as entry point</p>
-                        </div>
-                    </div>
-                    <div id="file-list" class="file-list"></div>
+                <div class="upload-tabs">
+                    <button type="button" class="tab-btn active" data-tab="archive">
+                        <span class="tab-icon">📦</span>
+                        Upload Archive
+                        <span class="tab-recommended">(Recommended)</span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="files">
+                        <span class="tab-icon">📁</span>
+                        Upload Files
+                    </button>
                 </div>
                 
+                <div id="tab-archive" class="tab-content active">
+                    <div class="form-group">
+                        <label>Upload Game Archive *</label>
+                        <div class="file-upload-area" id="drop-zone-archive">
+                            <input type="file" id="archive-input" name="archive" accept=".zip,.rar" required disabled>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-large">📦</div>
+                                <p>Drag & drop your ZIP or RAR archive here</p>
+                                <p class="upload-hint">or click to browse files</p>
+                                <div class="format-badges">
+                                    <span class="format-badge">.zip</span>
+                                    <span class="format-badge">.rar</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="archive-validation" class="validation-result" style="display: none;"></div>
+                    <div id="archive-file-list" class="file-list" style="display: none;"></div>
+                </div>
+                
+                <div id="tab-files" class="tab-content">
+                    <div class="form-group">
+                        <label>Upload Individual Files *</label>
+                        <div class="file-upload-area" id="drop-zone-files">
+                            <input type="file" id="files-input" name="files" multiple accept=".html,.js,.css,.json,.png,.jpg,.jpeg,.gif,.svg,.wav,.mp3,.ogg" disabled>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-large">📁</div>
+                                <p>Drag & drop multiple files here</p>
+                                <p class="upload-hint">Must include <strong>index.html</strong></p>
+                            </div>
+                        </div>
+                        <div id="files-file-list" class="file-list"></div>
+                    </div>
+                </div>
+                
+                <input type="hidden" id="upload-mode" name="upload_mode" value="archive">
+                
                 <div class="upload-info">
-                    <h4>Requirements:</h4>
+                    <h4>Archive Requirements:</h4>
                     <ul>
-                        <li>Maximum total size: 10MB</li>
-                        <li>Allowed file types: .html, .js, .css, .json, images, audio</li>
-                        <li>Must include <code>index.html</code> as the main entry</li>
-                        <li>Use relative paths for all resources (e.g., <code>./js/game.js</code>)</li>
+                        <li>Maximum archive size: <strong>15MB</strong></li>
+                        <li>Maximum extracted size: <strong>10MB</strong></li>
+                        <li>Maximum files: <strong>100</strong></li>
+                        <li>Archive must contain <code>index.html</code> at root level</li>
                     </ul>
+                </div>
+                
+                <div class="validation-checklist">
+                    <h4>Validation Checklist:</h4>
+                    <div class="checklist-items">
+                        <div class="checklist-item" id="check-archive">
+                            <span class="check-icon">⏳</span>
+                            <span class="check-label">Valid archive format</span>
+                        </div>
+                        <div class="checklist-item" id="check-size">
+                            <span class="check-icon">⏳</span>
+                            <span class="check-label">File size within limits</span>
+                        </div>
+                        <div class="checklist-item" id="check-index">
+                            <span class="check-icon">⏳</span>
+                            <span class="check-label">index.html found</span>
+                        </div>
+                        <div class="checklist-item" id="check-safe">
+                            <span class="check-icon">⏳</span>
+                            <span class="check-label">No dangerous files</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="coding-specs">
@@ -89,36 +151,37 @@
                     </div>
                     <div id="specs-content" class="specs-content">
                         <div class="spec-section">
-                            <h5>1. File Structure</h5>
-                            <p>Your game must follow this structure:</p>
+                            <h5>1. Archive Structure</h5>
+                            <p>Your archive should have one of these structures:</p>
                             <pre class="code-block">
-my-game/
-├── index.html          # Required: Main entry point
+my-game.zip/
+├── index.html          # Required: at root level
 ├── js/
-│   └── game.js         # Game logic
+│   └── game.js
 ├── css/
-│   └── style.css       # Game styles
-├── images/
-│   └── sprite.png      # Game assets
-└── audio/
-    └── sound.mp3       # Sound effects</pre>
+│   └── style.css
+└── ...
+
+# OR (single folder inside)
+my-game.zip/
+└── my-game/
+    ├── index.html
+    └── ...</pre>
                         </div>
                         
                         <div class="spec-section">
                             <h5>2. index.html Template</h5>
-                            <p>Your index.html should look like this:</p>
                             <pre class="code-block">
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width">
     <title>My Game</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
     <div id="game-container">
-        <!-- Your game UI here -->
         <div id="score">Score: 0</div>
         <canvas id="game-canvas"></canvas>
     </div>
@@ -128,116 +191,50 @@ my-game/
                         </div>
                         
                         <div class="spec-section">
-                            <h5>3. Score Submission API</h5>
-                            <p>Use the injected API to submit scores:</p>
+                            <h5>3. Score Submission</h5>
                             <pre class="code-block">
-// Available globally in your game
-// window.GAME_SLUG = "your-game-slug"
-// window.SUBMIT_SCORE_URL = "/games/submit-score"
-// window.submitGameScore(score) - async function
+// Platform injects these globals:
+// window.GAME_SLUG - your game identifier
+// window.submitGameScore(score) - submit score
 
-// Example: Game over, submit score
+// Example: Game over
 async function gameOver(finalScore) {
-    console.log("Game Over! Score:", finalScore);
+    console.log("Score:", finalScore);
     
-    // Option 1: Use the helper function (recommended)
+    // Submit to leaderboard
     const result = await window.submitGameScore(finalScore);
     if (result.success) {
-        alert("Score submitted successfully!");
+        alert("Score submitted!");
     }
-    
-    // Option 2: Direct fetch
-    // const response = await fetch(window.SUBMIT_SCORE_URL, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //         game_slug: window.GAME_SLUG,
-    //         score: finalScore
-    //     })
-    // });
 }</pre>
                         </div>
                         
                         <div class="spec-section">
-                            <h5>4. Security Best Practices</h5>
+                            <h5>4. Security Rules</h5>
                             <ul class="spec-list">
-                                <li><strong>No eval()</strong> - Never use eval() or Function constructor with user input</li>
-                                <li><strong>No inline event handlers</strong> - Use addEventListener() instead</li>
-                                <li><strong>Sanitize all user input</strong> - If your game accepts text input</li>
-                                <li><strong>No external scripts</strong> - All scripts must be included in your upload</li>
-                                <li><strong>CORS restrictions</strong> - Games run in sandboxed iframe, no cross-origin requests</li>
+                                <li><strong>No eval()</strong> or dynamic code execution</li>
+                                <li><strong>No external scripts</strong> - all code must be local</li>
+                                <li><strong>Use addEventListener()</strong> instead of inline handlers</li>
+                                <li><strong>No dangerous file types</strong> (.php, .exe, etc.)</li>
+                                <li><strong>No path traversal</strong> - no "../" in filenames</li>
                             </ul>
-                        </div>
-                        
-                        <div class="spec-section">
-                            <h5>5. Technical Limitations</h5>
-                            <ul class="spec-list">
-                                <li><strong>Maximum file size:</strong> 10MB total</li>
-                                <li><strong>Allowed file types:</strong> .html, .js, .css, .json, .png, .jpg, .gif, .svg, .wav, .mp3, .ogg</li>
-                                <li><strong>No server-side code:</strong> Games are purely client-side</li>
-                                <li><strong>No database access:</strong> Use localStorage for game saves</li>
-                                <li><strong>iframe sandbox:</strong> Games run in isolated context</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="spec-section">
-                            <h5>6. Example Game (Click Counter)</h5>
-                            <pre class="code-block">
-// js/game.js
-let score = 0;
-let gameActive = false;
-let timeLeft = 10;
-let timer = null;
-
-const scoreEl = document.getElementById('score');
-const timeEl = document.getElementById('time');
-const clickBtn = document.getElementById('click-btn');
-const startBtn = document.getElementById('start-btn');
-
-startBtn.addEventListener('click', startGame);
-clickBtn.addEventListener('click', () => {
-    if (gameActive) {
-        score++;
-        scoreEl.textContent = score;
-    }
-});
-
-function startGame() {
-    gameActive = true;
-    score = 0;
-    timeLeft = 10;
-    scoreEl.textContent = '0';
-    timeEl.textContent = '10';
-    startBtn.style.display = 'none';
-    
-    timer = setInterval(() => {
-        timeLeft--;
-        timeEl.textContent = timeLeft;
-        if (timeLeft <= 0) {
-            endGame();
-        }
-    }, 1000);
-}
-
-async function endGame() {
-    gameActive = false;
-    clearInterval(timer);
-    startBtn.style.display = 'inline-block';
-    
-    // Submit score to platform
-    await window.submitGameScore(score);
-    alert(`Game Over! Your score: ${score}`);
-}</pre>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary btn-large" id="submit-btn">
+                <button type="submit" class="btn btn-primary btn-large" id="submit-btn" disabled>
                     <span id="btn-text">Upload Game</span>
-                    <span id="btn-loading" style="display: none;">Uploading...</span>
+                    <span id="btn-loading" style="display: none;">
+                        <span class="spinner"></span>
+                        Uploading...
+                    </span>
                 </button>
+                <p class="upload-note">
+                    <strong>Note:</strong> Your game will be validated before upload. 
+                    Make sure all checks pass.
+                </p>
             </div>
         </form>
     </div>
@@ -246,54 +243,265 @@ async function endGame() {
 
 {% block scripts %}
 <script>
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('files');
-const fileList = document.getElementById('file-list');
-const form = document.getElementById('upload-form');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+const uploadMode = document.getElementById('upload-mode');
+const archiveInput = document.getElementById('archive-input');
+const filesInput = document.getElementById('files-input');
+const dropZoneArchive = document.getElementById('drop-zone-archive');
+const dropZoneFiles = document.getElementById('drop-zone-files');
 const submitBtn = document.getElementById('submit-btn');
 const btnText = document.getElementById('btn-text');
 const btnLoading = document.getElementById('btn-loading');
+const form = document.getElementById('upload-form');
+const archiveValidation = document.getElementById('archive-validation');
+const archiveFileList = document.getElementById('archive-file-list');
+const filesFileList = document.getElementById('files-file-list');
 
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
+let validationState = {
+    isArchiveValid: false,
+    areFilesValid: false
+};
+
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        btn.classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+        
+        uploadMode.value = tab;
+        
+        if (tab === 'archive') {
+            archiveInput.disabled = false;
+            filesInput.disabled = true;
+            filesInput.value = '';
+            filesFileList.innerHTML = '';
+        } else {
+            filesInput.disabled = false;
+            archiveInput.disabled = true;
+            archiveInput.value = '';
+            archiveValidation.style.display = 'none';
+            archiveFileList.style.display = 'none';
+        }
+        
+        updateSubmitButton();
+    });
 });
 
-dropZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
+function setupDropZone(dropZone, input) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
     
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        fileInput.files = files;
-        updateFileList(files);
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && !input.disabled) {
+            const dt = new DataTransfer();
+            for (let i = 0; i < files.length; i++) {
+                dt.items.add(files[i]);
+            }
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    dropZone.addEventListener('click', () => {
+        if (!input.disabled) {
+            input.click();
+        }
+    });
+}
+
+setupDropZone(dropZoneArchive, archiveInput);
+setupDropZone(dropZoneFiles, filesInput);
+
+archiveInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+        resetValidation();
+        return;
     }
+    
+    await validateArchive(file);
 });
 
-dropZone.addEventListener('click', () => {
-    fileInput.click();
+filesInput.addEventListener('change', (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+        validationState.areFilesValid = false;
+        filesFileList.innerHTML = '';
+        updateSubmitButton();
+        return;
+    }
+    
+    displayFilesList(files, filesFileList);
+    validateIndividualFiles(files);
 });
 
-fileInput.addEventListener('change', (e) => {
-    updateFileList(e.target.files);
-});
+async function validateArchive(file) {
+    resetValidation();
+    setCheckState('check-archive', 'pending');
+    setCheckState('check-size', 'pending');
+    setCheckState('check-index', 'pending');
+    setCheckState('check-safe', 'pending');
+    
+    const ext = file.name.split('.').pop().toLowerCase();
+    const allowedExts = ['zip', 'rar'];
+    
+    if (!allowedExts.includes(ext)) {
+        setCheckState('check-archive', 'error');
+        showValidationError(`Invalid archive format: .${ext}. Allowed: .zip, .rar`);
+        return;
+    }
+    
+    setCheckState('check-archive', 'success');
+    
+    if (file.size > 15 * 1024 * 1024) {
+        setCheckState('check-size', 'error');
+        showValidationError(`Archive too large. Maximum: 15MB, Got: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        return;
+    }
+    
+    setCheckState('check-size', 'success');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/games/api/validate-archive', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        archiveFileList.innerHTML = '';
+        archiveFileList.style.display = 'block';
+        
+        const summary = document.createElement('div');
+        summary.className = 'file-summary';
+        summary.innerHTML = `
+            <strong>${file.name}</strong>
+            <span class="file-count">${result.file_count || 0} files</span>
+            <span class="file-size">${formatFileSize(result.total_size || 0)}</span>
+        `;
+        archiveFileList.appendChild(summary);
+        
+        if (result.errors && result.errors.length > 0) {
+            setCheckState('check-safe', 'error');
+            showValidationErrors(result.errors, 'Errors');
+        } else {
+            setCheckState('check-safe', 'success');
+        }
+        
+        if (result.warnings && result.warnings.length > 0) {
+            showValidationErrors(result.warnings, 'Warnings', true);
+        }
+        
+        if (result.index_html_found) {
+            setCheckState('check-index', 'success');
+        } else {
+            setCheckState('check-index', 'error');
+            showValidationError('index.html not found in archive');
+        }
+        
+        validationState.isArchiveValid = result.valid;
+        updateSubmitButton();
+        
+    } catch (error) {
+        showValidationError(`Validation failed: ${error.message}`);
+        setCheckState('check-safe', 'error');
+    }
+}
 
-function updateFileList(files) {
-    fileList.innerHTML = '';
+function validateIndividualFiles(files) {
+    let hasIndex = false;
+    let totalSize = 0;
+    const errors = [];
+    const warnings = [];
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        totalSize += file.size;
+        
+        if (file.name === 'index.html') {
+            hasIndex = true;
+        }
+        
+        const ext = file.name.split('.').pop().toLowerCase();
+        const dangerousExts = ['php', 'php3', 'php4', 'php5', 'exe', 'bat', 'sh', 'py', 'rb', 'asp', 'jsp'];
+        
+        if (dangerousExts.includes(ext)) {
+            errors.push(`Dangerous file type: ${file.name}`);
+        }
+    }
+    
+    if (!hasIndex) {
+        errors.push('index.html not found');
+    }
+    
+    if (totalSize > 10 * 1024 * 1024) {
+        errors.push(`Total size too large: ${(totalSize / 1024 / 1024).toFixed(2)}MB > 10MB`);
+    }
+    
+    if (files.length > 100) {
+        errors.push(`Too many files: ${files.length} > 100`);
+    }
+    
+    setCheckState('check-archive', errors.length === 0 ? 'success' : 'error');
+    setCheckState('check-size', totalSize <= 10 * 1024 * 1024 ? 'success' : 'error');
+    setCheckState('check-index', hasIndex ? 'success' : 'error');
+    setCheckState('check-safe', errors.length === 0 ? 'success' : 'error');
+    
+    validationState.areFilesValid = errors.length === 0;
+    updateSubmitButton();
+}
+
+function displayFilesList(files, container) {
+    container.innerHTML = '';
     
     if (files.length === 0) return;
     
-    const fileNames = [];
+    const summary = document.createElement('div');
+    summary.className = 'file-summary';
+    
+    let totalSize = 0;
+    let hasIndex = false;
+    
     for (let i = 0; i < files.length; i++) {
-        fileNames.push(files[i].name);
-        
+        totalSize += files[i].size;
+        if (files[i].name === 'index.html') hasIndex = true;
+    }
+    
+    summary.innerHTML = `
+        <strong>${files.length} files</strong>
+        <span class="file-size">${formatFileSize(totalSize)}</span>
+        ${hasIndex ? '<span class="status-badge success">✓ index.html</span>' : ''}
+    `;
+    container.appendChild(summary);
+    
+    const fileList = document.createElement('div');
+    fileList.style.marginTop = '0.5rem';
+    
+    const maxDisplay = 10;
+    const displayCount = Math.min(files.length, maxDisplay);
+    
+    for (let i = 0; i < displayCount; i++) {
         const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
+        fileItem.className = 'file-item small';
         fileItem.innerHTML = `
             <span class="file-name">${files[i].name}</span>
             <span class="file-size">${formatFileSize(files[i].size)}</span>
@@ -301,15 +509,94 @@ function updateFileList(files) {
         fileList.appendChild(fileItem);
     }
     
-    if (!fileNames.includes('index.html')) {
-        const warning = document.createElement('div');
-        warning.className = 'file-warning';
-        warning.textContent = '⚠️ Warning: index.html not found. This file is required.';
-        fileList.appendChild(warning);
+    if (files.length > maxDisplay) {
+        const more = document.createElement('div');
+        more.className = 'more-files';
+        more.textContent = `... and ${files.length - maxDisplay} more files`;
+        fileList.appendChild(more);
+    }
+    
+    container.appendChild(fileList);
+}
+
+function setCheckState(checkId, state) {
+    const item = document.getElementById(checkId);
+    const icon = item.querySelector('.check-icon');
+    
+    item.classList.remove('pending', 'success', 'error');
+    item.classList.add(state);
+    
+    switch (state) {
+        case 'pending':
+            icon.textContent = '⏳';
+            break;
+        case 'success':
+            icon.textContent = '✓';
+            break;
+        case 'error':
+            icon.textContent = '✗';
+            break;
     }
 }
 
+function showValidationError(message) {
+    archiveValidation.innerHTML = `
+        <div class="validation-error">
+            <strong>❌ Error</strong>
+            <p>${message}</p>
+        </div>
+    `;
+    archiveValidation.style.display = 'block';
+}
+
+function showValidationErrors(errors, title, isWarning = false) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = isWarning ? 'validation-warning' : 'validation-error';
+    
+    const icon = isWarning ? '⚠️' : '❌';
+    let html = `<strong>${icon} ${title}</strong><ul>`;
+    
+    errors.slice(0, 5).forEach(err => {
+        html += `<li>${err}</li>`;
+    });
+    
+    if (errors.length > 5) {
+        html += `<li>... and ${errors.length - 5} more</li>`;
+    }
+    
+    html += '</ul>';
+    errorDiv.innerHTML = html;
+    
+    archiveValidation.appendChild(errorDiv);
+    archiveValidation.style.display = 'block';
+}
+
+function resetValidation() {
+    validationState.isArchiveValid = false;
+    validationState.areFilesValid = false;
+    
+    ['check-archive', 'check-size', 'check-index', 'check-safe'].forEach(id => {
+        setCheckState(id, 'pending');
+    });
+    
+    archiveValidation.innerHTML = '';
+    archiveValidation.style.display = 'none';
+    archiveFileList.style.display = 'none';
+    
+    updateSubmitButton();
+}
+
+function updateSubmitButton() {
+    const currentMode = uploadMode.value;
+    const isValid = currentMode === 'archive' 
+        ? validationState.isArchiveValid 
+        : validationState.areFilesValid;
+    
+    submitBtn.disabled = !isValid;
+}
+
 function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
@@ -317,7 +604,7 @@ function formatFileSize(bytes) {
 
 form.addEventListener('submit', (e) => {
     btnText.style.display = 'none';
-    btnLoading.style.display = 'inline';
+    btnLoading.style.display = 'inline-flex';
     submitBtn.disabled = true;
 });
 
@@ -339,12 +626,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (content) {
         content.style.display = 'none';
     }
+    
+    archiveInput.disabled = false;
+    filesInput.disabled = true;
 });
 </script>
 
 <style>
 .upload-container {
-    max-width: 800px;
+    max-width: 850px;
     margin: 0 auto;
 }
 
@@ -353,6 +643,22 @@ document.addEventListener('DOMContentLoaded', () => {
     border-radius: 1rem;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+}
+
+.error-message {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #991b1b;
+}
+
+.error-message pre {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0 0;
+    color: #7f1d1d;
 }
 
 .form-section {
@@ -406,10 +712,65 @@ document.addEventListener('DOMContentLoaded', () => {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.upload-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: #f8fafc;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.tab-btn:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-btn.active {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: #667eea;
+    font-weight: 600;
+}
+
+.tab-icon {
+    font-size: 1.25rem;
+}
+
+.tab-recommended {
+    font-size: 0.75rem;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 0.125rem 0.5rem;
+    border-radius: 1rem;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 .file-upload-area {
     border: 2px dashed #ddd;
     border-radius: 0.75rem;
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -432,14 +793,19 @@ document.addEventListener('DOMContentLoaded', () => {
     cursor: pointer;
 }
 
-.upload-icon {
-    font-size: 3rem;
+.file-upload-area input[type="file"]:disabled {
+    cursor: not-allowed;
+}
+
+.upload-icon-large {
+    font-size: 4rem;
     margin-bottom: 1rem;
 }
 
 .upload-placeholder p {
     color: #666;
     margin-bottom: 0.5rem;
+    font-size: 1.05rem;
 }
 
 .upload-hint {
@@ -447,9 +813,26 @@ document.addEventListener('DOMContentLoaded', () => {
     color: #999;
 }
 
+.format-badges {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.format-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
 .file-list {
     margin-top: 1rem;
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
@@ -457,10 +840,15 @@ document.addEventListener('DOMContentLoaded', () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     background: #f9f9f9;
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
+}
+
+.file-item.small {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
 }
 
 .file-name {
@@ -470,15 +858,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
 .file-size {
     color: #999;
+    font-size: 0.85rem;
+}
+
+.file-summary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f0fdf4;
+    border-radius: 0.5rem;
+    border: 1px solid #bbf7d0;
+}
+
+.file-summary strong {
+    color: #166534;
+}
+
+.file-count {
+    color: #64748b;
     font-size: 0.9rem;
 }
 
-.file-warning {
-    background: #fef3c7;
-    color: #92400e;
-    padding: 0.75rem;
+.more-files {
+    color: #999;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.validation-result {
+    margin-top: 1rem;
+}
+
+.validation-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
     border-radius: 0.5rem;
-    margin-top: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.validation-error strong {
+    color: #991b1b;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.validation-error ul {
+    margin: 0.5rem 0 0 1.25rem;
+    padding: 0;
+    color: #7f1d1d;
+}
+
+.validation-warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.validation-warning strong {
+    color: #92400e;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.validation-warning ul {
+    margin: 0.5rem 0 0 1.25rem;
+    padding: 0;
+    color: #78350f;
 }
 
 .upload-info {
@@ -496,6 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
 .upload-info ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .upload-info li {
@@ -521,10 +972,115 @@ document.addEventListener('DOMContentLoaded', () => {
     font-size: 0.9em;
 }
 
+.validation-checklist {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.validation-checklist h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.checklist-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.checklist-item.pending {
+    background: #f8fafc;
+}
+
+.checklist-item.success {
+    background: #f0fdf4;
+}
+
+.checklist-item.error {
+    background: #fef2f2;
+}
+
+.check-icon {
+    font-size: 1rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.checklist-item.pending .check-icon {
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+.checklist-item.success .check-icon {
+    background: #bbf7d0;
+    color: #166534;
+}
+
+.checklist-item.error .check-icon {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.check-label {
+    font-size: 0.9rem;
+    color: #555;
+}
+
 .form-actions {
     padding: 2rem;
     background: #f8fafc;
     text-align: center;
+}
+
+.btn-large {
+    padding: 1rem 2.5rem;
+    font-size: 1.05rem;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid transparent;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.upload-note {
+    margin-top: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.upload-note strong {
+    color: #555;
 }
 
 .coding-specs {
@@ -594,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     padding: 1rem;
     border-radius: 0.5rem;
     font-family: 'Fira Code', 'Consolas', monospace;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     overflow-x: auto;
     white-space: pre-wrap;
     line-height: 1.5;
@@ -628,6 +1184,18 @@ document.addEventListener('DOMContentLoaded', () => {
     color: #333;
 }
 
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
 @media (max-width: 768px) {
     .form-row {
         grid-template-columns: 1fr;
@@ -644,6 +1212,14 @@ document.addEventListener('DOMContentLoaded', () => {
     .code-block {
         font-size: 0.75rem;
         padding: 0.75rem;
+    }
+    
+    .upload-tabs {
+        flex-direction: column;
+    }
+    
+    .checklist-items {
+        grid-template-columns: 1fr;
     }
 }
 </style>

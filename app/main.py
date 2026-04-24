@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     init_db()
     
     settings.CUSTOM_GAMES_DIR.mkdir(parents=True, exist_ok=True)
+    settings.TEMP_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     
     from app.plugins.whack_a_mole import WhackAMolePlugin
     GameRegistry.register(WhackAMolePlugin())

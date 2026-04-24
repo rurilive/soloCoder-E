@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐍 贪吃蛇大冒险</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🐍 贪吃蛇大冒险</h1>
+        </div>
+        
+        <div class="game-settings" id="settings-panel">
+            <h2>🎮 游戏设置</h2>
+            
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="grid-size">地图大小</label>
+                    <select id="grid-size">
+                        <option value="15">小 (15×15)</option>
+                        <option value="20" selected>中 (20×20)</option>
+                        <option value="25">大 (25×25)</option>
+                        <option value="30">超大 (30×30)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="speed">初始速度</label>
+                    <select id="speed">
+                        <option value="200">慢速 🐢</option>
+                        <option value="150" selected>普通 🚶</option>
+                        <option value="100">快速 🏃</option>
+                        <option value="70">极速 ⚡</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="snake-color">蛇蛇颜色</label>
+                    <select id="snake-color">
+                        <option value="#10b981" selected>青柠绿 🍋</option>
+                        <option value="#8b5cf6">神秘紫 🔮</option>
+                        <option value="#f59e0b">金橙色 🎃</option>
+                        <option value="#ef4444">热情红 🍎</option>
+                        <option value="#3b82f6">天空蓝 💙</option>
+                        <option value="#ec4899">粉红猪 🐷</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="food-type">食物类型</label>
+                    <select id="food-type">
+                        <option value="random" selected>随机混合 🎲</option>
+                        <option value="fruits">水果派对 🍎</option>
+                        <option value="candies">糖果乐园 🍬</option>
+                        <option value="animals">动物世界 🐰</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn btn-start" id="start-btn">
+                <span class="btn-icon">🚀</span>
+                开始游戏
+            </button>
+        </div>
+        
+        <div class="game-board" id="game-panel" style="display: none;">
+            <div class="score-board">
+                <div class="score-item">
+                    <span class="score-label">🍎 得分</span>
+                    <span class="score-value" id="score">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">🐍 长度</span>
+                    <span class="score-value" id="length">3</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">⚡ 速度</span>
+                    <span class="score-value" id="speed-display">x1</span>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <canvas id="game-canvas"></canvas>
+                <div class="overlay" id="pause-overlay" style="display: none;">
+                    <div class="overlay-content">
+                        <h2>⏸️ 游戏暂停</h2>
+                        <p>按 空格键 或 P键 继续</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-hint">
+                <span class="hint-item">⬆️⬇️⬅️➡️ 方向键移动</span>
+                <span class="hint-item">空格/P 暂停</span>
+                <span class="hint-item">R 重新开始</span>
+            </div>
+        </div>
+        
+        <div class="game-over" id="gameover-panel" style="display: none;">
+            <div class="gameover-content">
+                <div class="gameover-icon">💀</div>
+                <h2 class="gameover-title">游戏结束!</h2>
+                
+                <div class="final-scores">
+                    <div class="final-score-item">
+                        <span class="final-label">最终得分</span>
+                        <span class="final-value" id="final-score">0</span>
+                    </div>
+                    <div class="final-score-item">
+                        <span class="final-label">蛇蛇长度</span>
+                        <span class="final-value" id="final-length">3</span>
+                    </div>
+                </div>
+                
+                <div class="gameover-buttons">
+                    <button class="btn btn-play-again" id="play-again-btn">
+                        <span class="btn-icon">🔄</span>
+                        再玩一次
+                    </button>
+                    <button class="btn btn-settings" id="back-settings-btn">
+                        <span class="btn-icon">⚙️</span>
+                        修改设置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="./js/game.js"></script>
+</body>
+</html>

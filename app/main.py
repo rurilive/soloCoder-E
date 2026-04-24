@@ -45,8 +45,8 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 app.mount("/custom-games", StaticFiles(directory=str(settings.CUSTOM_GAMES_DIR)), name="custom_games")
 
 app.include_router(routers.auth.router, prefix="/auth", tags=["auth"])
-app.include_router(routers.game.router, prefix="/games", tags=["games"])
 app.include_router(routers.upload.router, prefix="/games", tags=["games"])
+app.include_router(routers.game.router, prefix="/games", tags=["games"])
 app.include_router(routers.leaderboard.router, prefix="/leaderboard", tags=["leaderboard"])
 app.include_router(routers.review.router, prefix="/reviews", tags=["reviews"])
 app.include_router(routers.battle.router, prefix="/battle", tags=["battle"])

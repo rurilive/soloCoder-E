@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Game Platform{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to Game Platform</h1>
+    <p>Play, compete, and have fun with our collection of mini-games!</p>
+</div>
+
+<div class="section">
+    <h2>Available Games</h2>
+    {% if games %}
+        <div class="game-grid">
+            {% for game in games %}
+                <div class="game-card">
+                    <div class="game-icon">🎯</div>
+                    <h3>{{ game.name }}</h3>
+                    <p>{{ game.description }}</p>
+                    <a href="/games/{{ game.slug }}" class="btn btn-primary">Play Now</a>
+                    <div class="game-links">
+                        <a href="/leaderboard?game={{ game.slug }}">Leaderboard</a>
+                        <a href="/reviews/{{ game.slug }}">Reviews</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No games available yet. Check back soon!</p>
+    {% endif %}
+</div>
+
+<div class="section features">
+    <h2>Platform Features</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🏆</div>
+            <h3>Leaderboards</h3>
+            <p>Compete with players worldwide and climb the rankings!</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⚔️</div>
+            <h3>Real-time Battles</h3>
+            <p>Challenge your friends to real-time multiplayer battles!</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⭐</div>
+            <h3>Reviews & Ratings</h3>
+            <p>Rate games and share your feedback with the community!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

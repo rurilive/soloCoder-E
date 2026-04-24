@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Game Platform{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">🎮 Game Platform</a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/games" class="nav-link">Games</a>
+                <a href="/leaderboard" class="nav-link">Leaderboard</a>
+                <a href="/battle" class="nav-link">Battle</a>
+                {% if user %}
+                    <span class="nav-user">Welcome, {{ user.username }}
+                        {% if user.is_developer %} (Dev){% endif %}
+                    </span>
+                    <a href="/auth/logout" class="nav-link">Logout</a>
+                {% else %}
+                    <a href="/auth/login" class="nav-link">Login</a>
+                    <a href="/auth/register" class="nav-link">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Game Platform. All rights reserved.</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

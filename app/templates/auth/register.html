@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Game Platform{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create Account</h2>
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
+        <form method="POST" action="/auth/register" class="auth-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="password_confirm">Confirm Password</label>
+                <input type="password" id="password_confirm" name="password_confirm" required autocomplete="new-password">
+            </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="is_developer" name="is_developer">
+                <label for="is_developer">Register as Developer</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+        <div class="auth-footer">
+            Already have an account? <a href="/auth/login">Login here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

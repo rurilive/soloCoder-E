@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Battle Lobby - Game Platform{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Battle Lobby</h2>
+    
+    <div class="create-room-section">
+        <h3>Create a Battle Room</h3>
+        <form method="POST" action="/battle/create" class="create-room-form">
+            <div class="form-group">
+                <label for="game_slug">Select Game</label>
+                <select id="game_slug" name="game_slug" required>
+                    {% for game in games %}
+                        <option value="{{ game.slug }}">{{ game.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="is_public" name="is_public" checked>
+                <label for="is_public">Make Room Public (visible in lobby)</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Room</button>
+        </form>
+    </div>
+
+    <div class="rooms-section">
+        <h3>Available Rooms</h3>
+        {% if rooms %}
+            <div class="rooms-list">
+                {% for room in rooms %}
+                <div class="room-card">
+                    <div class="room-info">
+                        <span class="room-game">{{ room.game_name }}</span>
+                        <span class="room-host">Hosted by {{ room.host_name }}</span>
+                        <span class="room-code">Code: {{ room.invite_code }}</span>
+                    </div>
+                    <div class="room-status">
+                        {% if room.player2_id %}
+                            <span class="status-full">Full</span>
+                        {% else %}
+                            <span class="status-waiting">Waiting for player...</span>
+                            <a href="/battle/room/{{ room.invite_code }}" class="btn btn-secondary">Join</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No rooms available. Create one to get started!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="join-by-code-section">
+        <h3>Join by Invite Code</h3>
+        <form method="GET" action="/battle/room/" class="join-code-form">
+            <div class="form-group">
+                <input type="text" name="code" placeholder="Enter invite code" required>
+            </div>
+            <button type="submit" class="btn btn-secondary">Join Room</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

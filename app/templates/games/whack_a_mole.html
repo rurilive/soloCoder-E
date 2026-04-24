@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game_name }} - Game Platform{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="game-header">
+        <h1>{{ game_name }}</h1>
+        <p>Click the moles as they appear! Score as many points as you can in 30 seconds!</p>
+    </div>
+
+    <div class="game-info">
+        <div class="score-display">
+            <span>Score: <span id="score">0</span></span>
+        </div>
+        <div class="time-display">
+            <span>Time: <span id="time">30</span>s</span>
+        </div>
+    </div>
+
+    <div id="game-board" class="game-board">
+        <div class="hole" data-hole="0">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="1">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="2">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="3">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="4">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="5">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="6">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="7">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="8">
+            <div class="mole"></div>
+        </div>
+    </div>
+
+    <div class="game-controls">
+        <button id="start-btn" class="btn btn-primary btn-large">Start Game</button>
+        <button id="restart-btn" class="btn btn-secondary btn-large" style="display: none;">Play Again</button>
+    </div>
+
+    <div id="game-over" class="game-over" style="display: none;">
+        <h2>Game Over!</h2>
+        <p>Your final score: <span id="final-score">0</span></p>
+        <button id="submit-score-btn" class="btn btn-primary">Submit Score</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/whack_a_mole.js"></script>
+{% endblock %}

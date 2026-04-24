@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - Game Platform{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Leaderboard</h2>
+    
+    <div class="filter-section">
+        <form method="GET" action="/leaderboard">
+            <label for="game">Filter by Game:</label>
+            <select id="game" name="game" onchange="this.form.submit()">
+                <option value="">All Games</option>
+                {% for game in games %}
+                    <option value="{{ game.slug }}" {% if selected_game == game.slug %}selected{% endif %}>
+                        {{ game.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if leaderboard %}
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Game</th>
+                    <th>Score</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in leaderboard %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ entry.username }}</td>
+                        <td>{{ entry.game_name }}</td>
+                        <td class="score-cell">{{ entry.score }}</td>
+                        <td>{{ entry.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>No scores yet. Be the first to play and set a record!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

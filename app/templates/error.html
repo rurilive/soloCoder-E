@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Game Platform{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <h1>Oops!</h1>
+        <p class="error-message">{{ error }}</p>
+        <a href="/" class="btn btn-primary">Go Home</a>
+    </div>
+</div>
+{% endblock %}

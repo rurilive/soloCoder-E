@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews - {{ game_info.name if game_info else 'Game Platform' }}{% endblock %}
+
+{% block content %}
+{% if game_info %}
+<div class="section">
+    <div class="game-header">
+        <h1>{{ game_info.name }}</h1>
+        <p class="game-description">{{ game_info.description }}</p>
+        <div class="avg-rating">
+            <span>Average Rating:</span>
+            <span class="stars">
+                {% for i in range(5) %}
+                    {% if i < average_rating %}
+                        ★
+                    {% else %}
+                        ☆
+                    {% endif %}
+                {% endfor %}
+            </span>
+            <span class="rating-value">({{ average_rating }})</span>
+        </div>
+    </div>
+
+    {% if user %}
+    <div class="review-form-section">
+        <h3>Write a Review</h3>
+        <form method="POST" action="/reviews/{{ game_info.slug }}/submit" class="review-form">
+            <div class="form-group">
+                <label for="rating">Rating</label>
+                <select id="rating" name="rating" required>
+                    <option value="5">★★★★★ (5)</option>
+                    <option value="4">★★★★☆ (4)</option>
+                    <option value="3">★★★☆☆ (3)</option>
+                    <option value="2">★★☆☆☆ (2)</option>
+                    <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="comment">Comment (optional)</label>
+                <textarea id="comment" name="comment" rows="4" placeholder="Share your thoughts about this game..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Review</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="login-prompt">
+        <p><a href="/auth/login">Login</a> to write a review</p>
+    </div>
+    {% endif %}
+
+    <div class="reviews-section">
+        <h3>Reviews ({{ reviews|length }})</h3>
+        
+        {% if reviews %}
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="reviewer">{{ review.username }}</span>
+                        <span class="review-stars">
+                            {% for i in range(5) %}
+                                {% if i < review.rating %}
+                                    ★
+                                {% else %}
+                                    ☆
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        <span class="review-date">{{ review.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    {% if review.comment %}
+                    <div class="review-comment">
+                        {{ review.comment }}
+                    </div>
+                    {% endif %}
+                    
+                    {% for reply in review.replies %}
+                    <div class="developer-reply">
+                        <div class="reply-header">
+                            <span class="dev-label">Developer Reply</span>
+                            <span class="reply-author">{{ reply.developer_name }}</span>
+                            <span class="reply-date">{{ reply.created_at.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="reply-content">
+                            {{ reply.content }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if user and user.is_developer %}
+                    <div class="reply-form">
+                        <form method="POST" action="/reviews/reply/{{ review.id }}">
+                            <textarea name="content" rows="2" placeholder="Reply to this review..."></textarea>
+                            <button type="submit" class="btn btn-secondary btn-small">Reply</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No reviews yet. Be the first to review this game!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="section">
+    <p>Game not found.</p>
+</div>
+{% endif %}
+{% endblock %}

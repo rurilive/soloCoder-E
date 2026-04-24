@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Battle Room - Game Platform{% endblock %}
+
+{% block content %}
+<div class="battle-room-container">
+    <div class="room-header">
+        <h1>{{ room.game_name }} Battle</h1>
+        <div class="room-info">
+            <span class="room-code">Room Code: {{ room.invite_code }}</span>
+            <button id="copy-code-btn" class="btn btn-secondary btn-small">Copy Invite Link</button>
+        </div>
+    </div>
+
+    <div class="players-section">
+        <div class="player-card {% if user.user_id == room.host_id %}player-self{% endif %}">
+            <h3>Player 1 (Host)</h3>
+            <p class="player-name">{{ room.host_name }}</p>
+            <p class="player-score">Score: <span id="score-{{ room.host_id }}">0</span></p>
+        </div>
+        
+        <div class="vs-text">VS</div>
+        
+        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}">
+            <h3>Player 2</h3>
+            {% if room.player2_name %}
+                <p class="player-name">{{ room.player2_name }}</p>
+                <p class="player-score">Score: <span id="score-{{ room.player2_id }}">0</span></p>
+            {% else %}
+                <p class="player-name">Waiting for opponent...</p>
+                <p class="player-score">Score: 0</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="game-status">
+        <span id="game-status">
+            {% if room.player2_id and room.status == 'waiting' %}
+                Both players connected! Host can start the game.
+            {% elif not room.player2_id %}
+                Waiting for another player to join...
+            {% else %}
+                Ready to play!
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="game-timer" style="display: none;">
+        <span>Time Left: <span id="battle-time">30</span>s</span>
+    </div>
+
+    <div class="battle-controls">
+        {% if user.user_id == room.host_id %}
+            <button id="start-battle-btn" class="btn btn-primary btn-large" {% if not room.player2_id %}disabled{% endif %}>
+                Start Battle
+            </button>
+        {% endif %}
+    </div>
+
+    <div id="battle-game-board" class="game-board" style="display: none;">
+        <div class="hole" data-hole="0">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="1">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="2">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="3">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="4">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="5">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="6">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="7">
+            <div class="mole"></div>
+        </div>
+        <div class="hole" data-hole="8">
+            <div class="mole"></div>
+        </div>
+    </div>
+
+    <div id="battle-result" class="battle-result" style="display: none;">
+        <h2 id="result-text">Battle Over!</h2>
+        <div class="final-scores">
+            <p>{{ room.host_name }}: <span id="final-score-{{ room.host_id }}">0</span></p>
+            {% if room.player2_name %}
+            <p>{{ room.player2_name }}: <span id="final-score-{{ room.player2_id }}">0</span></p>
+            {% endif %}
+        </div>
+        <a href="/battle" class="btn btn-primary">Back to Lobby</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const roomCode = "{{ room.invite_code }}";
+    const userId = {{ user.user_id if user else 'null' }};
+    const hostId = {{ room.host_id }};
+    const player2Id = {{ room.player2_id if room.player2_id else 'null' }};
+    
+    let ws = null;
+    let gameInterval = null;
+    let moleTimeout = null;
+    let currentScore = 0;
+    let timeLeft = 30;
+    let gameActive = false;
+    
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/battle/ws/${roomCode}`;
+        
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = function() {
+            console.log('Connected to battle room');
+        };
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            handleMessage(data);
+        };
+        
+        ws.onclose = function() {
+            console.log('Disconnected from battle room');
+        };
+    }
+    
+    function handleMessage(data) {
+        switch(data.type) {
+            case 'player_joined':
+                updateGameStatus('Player joined! Ready to start.');
+                if (userId === hostId) {
+                    document.getElementById('start-battle-btn').disabled = false;
+                }
+                break;
+            case 'player_left':
+                updateGameStatus('Player left. Waiting for new opponent...');
+                if (userId === hostId) {
+                    document.getElementById('start-battle-btn').disabled = true;
+                }
+                break;
+            case 'game_started':
+                startGame();
+                break;
+            case 'score_update':
+                if (data.players) {
+                    for (const [uid, playerData] of Object.entries(data.players)) {
+                        const scoreEl = document.getElementById(`score-${uid}`);
+                        if (scoreEl) {
+                            scoreEl.textContent = playerData.score;
+                        }
+                    }
+                }
+                break;
+            case 'game_ended':
+                endGame(data.players);
+                break;
+        }
+    }
+    
+    function updateGameStatus(text) {
+        document.getElementById('game-status').textContent = text;
+    }
+    
+    function startGame() {
+        gameActive = true;
+        currentScore = 0;
+        timeLeft = 30;
+        
+        document.getElementById('game-status').style.display = 'none';
+        document.getElementById('battle-controls').style.display = 'none';
+        document.getElementById('battle-game-board').style.display = 'grid';
+        document.getElementById('game-timer').style.display = 'block';
+        document.getElementById('battle-time').textContent = timeLeft;
+        
+        setupGameBoard();
+        
+        gameInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('battle-time').textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(gameInterval);
+                gameActive = false;
+                if (ws) {
+                    ws.send(JSON.stringify({ type: 'game_ended' }));
+                }
+            }
+        }, 1000);
+    }
+    
+    function setupGameBoard() {
+        const holes = document.querySelectorAll('#battle-game-board .hole');
+        
+        holes.forEach((hole, index) => {
+            hole.addEventListener('click', () => {
+                if (!gameActive) return;
+                
+                const mole = hole.querySelector('.mole');
+                if (mole.classList.contains('up')) {
+                    mole.classList.remove('up');
+                    currentScore += 10;
+                    
+                    const scoreEl = document.getElementById(`score-${userId}`);
+                    if (scoreEl) {
+                        scoreEl.textContent = currentScore;
+                    }
+                    
+                    if (ws) {
+                        ws.send(JSON.stringify({
+                            type: 'score_update',
+                            score: currentScore
+                        }));
+                    }
+                }
+            });
+        });
+        
+        showRandomMole();
+    }
+    
+    function showRandomMole() {
+        if (!gameActive) return;
+        
+        const holes = document.querySelectorAll('#battle-game-board .hole');
+        const randomHole = holes[Math.floor(Math.random() * holes.length)];
+        const mole = randomHole.querySelector('.mole');
+        
+        mole.classList.add('up');
+        
+        moleTimeout = setTimeout(() => {
+            mole.classList.remove('up');
+            if (gameActive) {
+                showRandomMole();
+            }
+        }, 800 + Math.random() * 400);
+    }
+    
+    function endGame(players) {
+        gameActive = false;
+        clearInterval(gameInterval);
+        
+        if (moleTimeout) {
+            clearTimeout(moleTimeout);
+        }
+        
+        document.getElementById('battle-game-board').style.display = 'none';
+        document.getElementById('game-timer').style.display = 'none';
+        document.getElementById('battle-result').style.display = 'block';
+        
+        let myScore = 0;
+        let opponentScore = 0;
+        
+        if (players) {
+            for (const [uid, playerData] of Object.entries(players)) {
+                const finalScoreEl = document.getElementById(`final-score-${uid}`);
+                if (finalScoreEl) {
+                    finalScoreEl.textContent = playerData.score;
+                }
+                
+                if (parseInt(uid) === userId) {
+                    myScore = playerData.score;
+                } else {
+                    opponentScore = playerData.score;
+                }
+            }
+        }
+        
+        const resultText = document.getElementById('result-text');
+        if (myScore > opponentScore) {
+            resultText.textContent = '🎉 You Win!';
+        } else if (myScore < opponentScore) {
+            resultText.textContent = '😢 You Lose!';
+        } else {
+            resultText.textContent = '🤝 It\'s a Tie!';
+        }
+    }
+    
+    document.getElementById('copy-code-btn')?.addEventListener('click', function() {
+        const inviteLink = `${window.location.origin}/battle/room/${roomCode}`;
+        navigator.clipboard.writeText(inviteLink).then(() => {
+            this.textContent = 'Copied!';
+            setTimeout(() => {
+                this.textContent = 'Copy Invite Link';
+            }, 2000);
+        });
+    });
+    
+    document.getElementById('start-battle-btn')?.addEventListener('click', function() {
+        if (ws) {
+            ws.send(JSON.stringify({ type: 'start_game' }));
+        }
+    });
+    
+    connectWebSocket();
+</script>
+{% endblock %}

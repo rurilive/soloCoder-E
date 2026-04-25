@@ -103,6 +103,7 @@ class GameRoom(Base):
     status = Column(String(20), default="waiting")
     player2_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_active_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     game = relationship("Game", back_populates="rooms")
     host = relationship("User", foreign_keys=[host_id], back_populates="hosted_rooms")

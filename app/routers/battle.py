@@ -1,16 +1,24 @@
 import uuid
 import random
 import string
-from typing import Dict, Any, Optional
+import asyncio
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional, Set
 from fastapi import APIRouter, Request, Depends, HTTPException, status, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.auth import get_current_user, get_current_user_or_401
 from app.models import GameRoom, Game as GameModel, User
 from app.plugins.base import GameRegistry
+
+logger = logging.getLogger(__name__)
+
+ROOM_TIMEOUT_MINUTES = 5
+CLEANUP_INTERVAL_SECONDS = 60
 
 router = APIRouter()
 
@@ -23,12 +31,114 @@ class ConnectionManager:
         self.active_connections: Dict[str, Dict[int, WebSocket]] = {}
         self.room_states: Dict[str, Dict[str, Any]] = {}
         self.room_hosts: Dict[str, int] = {}
+        self.room_last_active: Dict[str, datetime] = {}
+        self._cleanup_task: Optional[asyncio.Task] = None
+        self._is_running: bool = False
+
+    def update_last_active(self, room_code: str):
+        self.room_last_active[room_code] = datetime.utcnow()
+
+    def get_inactive_rooms(self, timeout_minutes: int = ROOM_TIMEOUT_MINUTES) -> Set[str]:
+        cutoff_time = datetime.utcnow() - timedelta(minutes=timeout_minutes)
+        inactive_rooms = set()
+        for room_code, last_active in self.room_last_active.items():
+            if last_active < cutoff_time:
+                inactive_rooms.add(room_code)
+        return inactive_rooms
+
+    def force_disconnect_room(self, room_code: str):
+        if room_code in self.active_connections:
+            for user_id, websocket in list(self.active_connections[room_code].items()):
+                try:
+                    asyncio.create_task(websocket.close(code=status.WS_1001_GOING_AWAY))
+                except Exception:
+                    pass
+                self.disconnect(room_code, user_id)
+
+    def cleanup_room(self, room_code: str):
+        self.force_disconnect_room(room_code)
+        if room_code in self.room_last_active:
+            del self.room_last_active[room_code]
+
+    async def start_cleanup_task(self):
+        if self._is_running:
+            return
+        self._is_running = True
+        logger.info("Starting room cleanup task")
+        while self._is_running:
+            try:
+                await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
+                self._run_cleanup()
+            except asyncio.CancelledError:
+                logger.info("Room cleanup task cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Error in cleanup task: {e}")
+
+    def _run_cleanup(self):
+        db = SessionLocal()
+        try:
+            cutoff_time = datetime.utcnow() - timedelta(minutes=ROOM_TIMEOUT_MINUTES)
+            
+            all_db_rooms = db.query(GameRoom).all()
+            
+            inactive_codes = set()
+            
+            for db_room in all_db_rooms:
+                last_active = self.room_last_active.get(db_room.invite_code)
+                
+                if last_active is None:
+                    last_active = db_room.last_active_at
+                
+                if last_active < cutoff_time:
+                    inactive_codes.add(db_room.invite_code)
+            
+            for room_code in self.room_last_active:
+                if room_code not in inactive_codes:
+                    if self.room_last_active[room_code] < cutoff_time:
+                        inactive_codes.add(room_code)
+            
+            if not inactive_codes:
+                return
+
+            logger.info(f"Found {len(inactive_codes)} inactive rooms to cleanup")
+            
+            for room_code in inactive_codes:
+                try:
+                    db_room = db.query(GameRoom).filter(
+                        GameRoom.invite_code == room_code
+                    ).first()
+                    
+                    if db_room:
+                        db.delete(db_room)
+                        logger.info(f"Deleted room {room_code} from database (inactive for {ROOM_TIMEOUT_MINUTES} minutes)")
+                    
+                    self.cleanup_room(room_code)
+                    logger.info(f"Cleaned up room {room_code} from memory")
+                    
+                except Exception as e:
+                    logger.error(f"Error cleaning up room {room_code}: {e}")
+            
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error during database cleanup: {e}")
+        finally:
+            db.close()
+
+    def stop_cleanup_task(self):
+        self._is_running = False
+        if self._cleanup_task:
+            self._cleanup_task.cancel()
+            self._cleanup_task = None
+        logger.info("Room cleanup task stopped")
 
     async def connect(self, websocket: WebSocket, room_code: str, user_id: int):
         await websocket.accept()
         if room_code not in self.active_connections:
             self.active_connections[room_code] = {}
         self.active_connections[room_code][user_id] = websocket
+        self.update_last_active(room_code)
 
     def disconnect(self, room_code: str, user_id: int):
         if room_code in self.active_connections:
@@ -40,6 +150,10 @@ class ConnectionManager:
                     del self.room_states[room_code]
                 if room_code in self.room_hosts:
                     del self.room_hosts[room_code]
+                if room_code in self.room_last_active:
+                    del self.room_last_active[room_code]
+            else:
+                self.update_last_active(room_code)
 
     async def broadcast_to_room(self, room_code: str, message: Dict[str, Any]):
         if room_code in self.active_connections:
@@ -69,6 +183,7 @@ class ConnectionManager:
             "time_left": 30,
         }
         self.room_hosts[room_code] = host_id
+        self.update_last_active(room_code)
 
     def get_or_init_room_state(self, room_code: str, host_id: int, player2_id: Optional[int] = None) -> Dict[str, Any]:
         if room_code not in self.room_states:
@@ -82,17 +197,20 @@ class ConnectionManager:
                 self.room_states[room_code]["players"][player2_id] = {"score": 0, "ready": False}
         if room_code not in self.room_hosts:
             self.room_hosts[room_code] = host_id
+        self.update_last_active(room_code)
         return self.room_states[room_code]
 
     def add_player_to_state(self, room_code: str, user_id: int):
         if room_code in self.room_states:
             if user_id not in self.room_states[room_code]["players"]:
                 self.room_states[room_code]["players"][user_id] = {"score": 0, "ready": False}
+                self.update_last_active(room_code)
 
     def update_score(self, room_code: str, user_id: int, score: int):
         if room_code in self.room_states:
             if user_id in self.room_states[room_code]["players"]:
                 self.room_states[room_code]["players"][user_id]["score"] = score
+                self.update_last_active(room_code)
 
     def get_room_state(self, room_code: str) -> Optional[Dict[str, Any]]:
         return self.room_states.get(room_code)
@@ -315,6 +433,8 @@ async def websocket_endpoint(
         while True:
             data = await websocket.receive_json()
             message_type = data.get("type")
+            
+            manager.update_last_active(invite_code)
             
             room_state = manager.get_room_state(invite_code)
             if not room_state:

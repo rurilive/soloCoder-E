@@ -18,6 +18,7 @@ from app import routers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import asyncio
     init_db()
     
     settings.CUSTOM_GAMES_DIR.mkdir(parents=True, exist_ok=True)
@@ -32,7 +33,17 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
     
+    from app.routers.battle import manager
+    cleanup_task = asyncio.create_task(manager.start_cleanup_task())
+    
     yield
+    
+    manager.stop_cleanup_task()
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(

@@ -198,6 +198,11 @@ class ConnectionManager:
             }
             if player2_id is not None:
                 self.room_states[room_code]["players"][player2_id] = {"score": 0, "ready": False}
+        else:
+            if host_id not in self.room_states[room_code]["players"]:
+                self.room_states[room_code]["players"][host_id] = {"score": 0, "ready": False}
+            if player2_id is not None and player2_id not in self.room_states[room_code]["players"]:
+                self.room_states[room_code]["players"][player2_id] = {"score": 0, "ready": False}
         if room_code not in self.room_hosts:
             self.room_hosts[room_code] = host_id
         self.update_last_active(room_code)
@@ -355,6 +360,18 @@ async def room_page(
     
     room_data, host_name, game_name, game_slug = room
     
+    if room_data.player2_id is not None:
+        if user["user_id"] != room_data.host_id and user["user_id"] != room_data.player2_id:
+            return templates.TemplateResponse(
+                request,
+                "error.html",
+                {
+                    "user": user,
+                    "error": "This room is full. Please try another room.",
+                },
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+    
     if room_data.status == "waiting" and room_data.player2_id is None:
         if user["user_id"] != room_data.host_id:
             room_data.player2_id = user["user_id"]
@@ -414,6 +431,11 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     
+    if room.player2_id is not None:
+        if user_id != room.host_id and user_id != room.player2_id:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    
     await manager.connect(websocket, invite_code, user_id)
     
     try:
@@ -445,7 +467,10 @@ async def websocket_endpoint(
             
             if message_type == "ready":
                 is_ready = data.get("ready", True)
-                room_state["players"][user_id]["ready"] = is_ready
+                if user_id not in room_state["players"]:
+                    room_state["players"][user_id] = {"score": 0, "ready": is_ready}
+                else:
+                    room_state["players"][user_id]["ready"] = is_ready
                 manager.update_last_active(invite_code)
                 
                 players_ready = []

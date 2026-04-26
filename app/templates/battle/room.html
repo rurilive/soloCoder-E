@@ -24,18 +24,19 @@
         
         <div class="vs-text">VS</div>
         
-        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}" id="player-card-{{ room.player2_id }}">
+        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}" id="player-card-2">
             <h3>Player 2</h3>
-            {% if room.player2_name %}
-                <p class="player-name">{{ room.player2_name }}</p>
-                <p class="player-score">Score: <span id="score-{{ room.player2_id }}">0</span></p>
-                <p class="player-ready-status" id="ready-status-{{ room.player2_id }}">
-                    <span class="ready-indicator not-ready">Not Ready</span>
-                </p>
-            {% else %}
-                <p class="player-name">Waiting for opponent...</p>
-                <p class="player-score">Score: 0</p>
-            {% endif %}
+            <p class="player-name" id="player2-name">
+                {% if room.player2_name %}
+                    {{ room.player2_name }}
+                {% else %}
+                    Waiting for opponent...
+                {% endif %}
+            </p>
+            <p class="player-score">Score: <span id="score-player2">0</span></p>
+            <p class="player-ready-status" id="ready-status-player2" style="{% if not room.player2_name %}display: none;{% endif %}">
+                <span class="ready-indicator not-ready">Not Ready</span>
+            </p>
         </div>
     </div>
 
@@ -148,27 +149,45 @@
     function handleMessage(data) {
         switch(data.type) {
             case 'player_joined':
-                updateGameStatus('Player joined! Click Ready to prepare.');
+                const joinedUserId2 = parseInt(data.user_id);
+                const isHostJoining = joinedUserId2 === hostId;
+                
+                if (!isHostJoining) {
+                    player2Id = joinedUserId2;
+                    
+                    const player2NameEl = document.getElementById('player2-name');
+                    if (player2NameEl && data.username) {
+                        player2NameEl.textContent = data.username;
+                    }
+                    
+                    const readyStatusEl = document.getElementById('ready-status-player2');
+                    if (readyStatusEl) {
+                        readyStatusEl.style.display = 'block';
+                    }
+                    
+                    const playerCardEl = document.getElementById('player-card-2');
+                    if (playerCardEl && userId === player2Id) {
+                        playerCardEl.classList.add('player-self');
+                    }
+                }
+                
                 if (data.players && Array.isArray(data.players)) {
                     for (const pid of data.players) {
                         const playerId = parseInt(pid);
-                        if (playerId !== hostId && playerId !== userId) {
-                            player2Id = playerId;
-                        }
                         if (playersReadyState[playerId] === undefined) {
                             playersReadyState[playerId] = false;
                         }
                     }
                 }
-                if (data.user_id) {
-                    const joinedUserId = parseInt(data.user_id);
-                    if (joinedUserId !== hostId && joinedUserId !== userId) {
-                        player2Id = joinedUserId;
-                    }
-                    if (playersReadyState[joinedUserId] === undefined) {
-                        playersReadyState[joinedUserId] = false;
-                    }
+                
+                if (playersReadyState[joinedUserId2] === undefined) {
+                    playersReadyState[joinedUserId2] = false;
                 }
+                
+                if (!isHostJoining) {
+                    updateGameStatus('Player joined! Click Ready to prepare.');
+                }
+                
                 updateAllReadyStatus();
                 break;
             case 'player_left':
@@ -176,6 +195,32 @@
                 isSelfReady = false;
                 playersReadyState = {};
                 player2Id = null;
+                
+                const player2NameEl = document.getElementById('player2-name');
+                if (player2NameEl) {
+                    player2NameEl.textContent = 'Waiting for opponent...';
+                }
+                
+                const readyStatusEl = document.getElementById('ready-status-player2');
+                if (readyStatusEl) {
+                    readyStatusEl.style.display = 'none';
+                    const span = readyStatusEl.querySelector('.ready-indicator');
+                    if (span) {
+                        span.className = 'ready-indicator not-ready';
+                        span.textContent = 'Not Ready';
+                    }
+                }
+                
+                const scorePlayer2El = document.getElementById('score-player2');
+                if (scorePlayer2El) {
+                    scorePlayer2El.textContent = '0';
+                }
+                
+                const playerCardEl = document.getElementById('player-card-2');
+                if (playerCardEl) {
+                    playerCardEl.classList.remove('player-self');
+                }
+                
                 updateReadyButton();
                 updateAllReadyStatus();
                 if (userId === hostId) {
@@ -195,15 +240,22 @@
                     for (const p of data.players) {
                         const pid = parseInt(p.user_id);
                         playersReadyState[pid] = p.ready;
-                    }
-                }
-                
-                const readyIndicator = document.getElementById(`ready-status-${readyUserId}`);
-                if (readyIndicator) {
-                    const indicatorSpan = readyIndicator.querySelector('.ready-indicator');
-                    if (indicatorSpan) {
-                        indicatorSpan.className = `ready-indicator ${readyStatus ? 'ready' : 'not-ready'}`;
-                        indicatorSpan.textContent = readyStatus ? 'Ready' : 'Not Ready';
+                        
+                        let indicatorId;
+                        if (pid === hostId) {
+                            indicatorId = `ready-status-${pid}`;
+                        } else {
+                            indicatorId = 'ready-status-player2';
+                        }
+                        
+                        const indicator = document.getElementById(indicatorId);
+                        if (indicator) {
+                            const span = indicator.querySelector('.ready-indicator');
+                            if (span) {
+                                span.className = `ready-indicator ${p.ready ? 'ready' : 'not-ready'}`;
+                                span.textContent = p.ready ? 'Ready' : 'Not Ready';
+                            }
+                        }
                     }
                 }
                 
@@ -220,7 +272,13 @@
             case 'score_update':
                 if (data.players) {
                     for (const [uid, playerData] of Object.entries(data.players)) {
-                        const scoreEl = document.getElementById(`score-${uid}`);
+                        const playerId = parseInt(uid);
+                        let scoreEl;
+                        if (playerId === hostId) {
+                            scoreEl = document.getElementById(`score-${uid}`);
+                        } else {
+                            scoreEl = document.getElementById('score-player2');
+                        }
                         if (scoreEl) {
                             scoreEl.textContent = playerData.score;
                         }

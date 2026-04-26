@@ -317,23 +317,32 @@
         
         if (connectedPlayers.length < 2) {
             startBtn.disabled = true;
+            updateGameStatus(`Waiting for more players to join... (${connectedPlayers.length}/${maxPlayers})`);
             return;
         }
         
-        let allReady = true;
         for (const playerId of connectedPlayers) {
-            if (!playersReadyState[playerId]) {
+            if (playersReadyState[playerId] === undefined) {
+                playersReadyState[playerId] = false;
+            }
+        }
+        
+        let allReady = true;
+        let readyCount = 0;
+        for (const playerId of connectedPlayers) {
+            if (playersReadyState[playerId] === true) {
+                readyCount++;
+            } else {
                 allReady = false;
-                break;
             }
         }
         
         startBtn.disabled = !allReady;
         
         if (allReady) {
-            updateGameStatus('All players ready! Host can start the game.');
+            updateGameStatus(`All ${connectedPlayers.length} players ready! Host can start the game.`);
         } else {
-            updateGameStatus('Waiting for all players to be ready...');
+            updateGameStatus(`${readyCount}/${connectedPlayers.length} players ready. Waiting for others...`);
         }
     }
     

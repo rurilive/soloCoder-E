@@ -8,46 +8,37 @@
         <h1>{{ room.game_name }} Battle</h1>
         <div class="room-info">
             <span class="room-code">Room Code: {{ room.invite_code }}</span>
+            <span class="room-max-players">Max Players: {{ room.max_players }}</span>
             <button id="copy-code-btn" class="btn btn-secondary btn-small">Copy Invite Link</button>
         </div>
     </div>
 
-    <div class="players-section">
-        <div class="player-card {% if user.user_id == room.host_id %}player-self{% endif %}" id="player-card-{{ room.host_id }}">
-            <h3>Player 1 (Host)</h3>
-            <p class="player-name">{{ room.host_name }}</p>
-            <p class="player-score">Score: <span id="score-{{ room.host_id }}">0</span></p>
-            <p class="player-ready-status" id="ready-status-{{ room.host_id }}">
+    <div class="players-section" id="players-section">
+        {% for player in room.players %}
+        <div class="player-card {% if user.user_id == player.user_id %}player-self{% endif %}" id="player-card-{{ player.user_id }}">
+            <h3>Player {{ loop.index }}{% if player.is_host %} (Host){% endif %}</h3>
+            <p class="player-name" id="player-name-{{ player.user_id }}">{{ player.username }}</p>
+            <p class="player-score">Score: <span id="score-{{ player.user_id }}">0</span></p>
+            <p class="player-ready-status" id="ready-status-{{ player.user_id }}">
                 <span class="ready-indicator not-ready">Not Ready</span>
             </p>
         </div>
-        
-        <div class="vs-text">VS</div>
-        
-        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}" id="player-card-2">
-            <h3>Player 2</h3>
-            <p class="player-name" id="player2-name">
-                {% if room.player2_name %}
-                    {{ room.player2_name }}
-                {% else %}
-                    Waiting for opponent...
-                {% endif %}
-            </p>
-            <p class="player-score">Score: <span id="score-player2">0</span></p>
-            <p class="player-ready-status" id="ready-status-player2" style="{% if not room.player2_name %}display: none;{% endif %}">
-                <span class="ready-indicator not-ready">Not Ready</span>
-            </p>
+        {% endfor %}
+        {% for i in range(room.max_players - room.players|length) %}
+        <div class="player-card empty-slot" id="player-card-empty-{{ i }}">
+            <h3>Player {{ room.players|length + i + 1 }}</h3>
+            <p class="player-name">Waiting for player...</p>
+            <p class="player-score" style="opacity: 0.5;">Score: 0</p>
         </div>
+        {% endfor %}
     </div>
 
     <div class="game-status">
         <span id="game-status">
-            {% if room.player2_id and room.status == 'waiting' %}
-                Both players connected! Host can start the game.
-            {% elif not room.player2_id %}
-                Waiting for another player to join...
+            {% if room.players|length >= 2 and room.status == 'waiting' %}
+                {{ room.players|length }} players connected! Waiting for all to be ready...
             {% else %}
-                Ready to play!
+                Waiting for more players to join... ({{ room.players|length }}/{{ room.max_players }})
             {% endif %}
         </span>
     </div>
@@ -99,11 +90,7 @@
 
     <div id="battle-result" class="battle-result" style="display: none;">
         <h2 id="result-text">Battle Over!</h2>
-        <div class="final-scores">
-            <p>{{ room.host_name }}: <span id="final-score-{{ room.host_id }}">0</span></p>
-            {% if room.player2_name %}
-            <p>{{ room.player2_name }}: <span id="final-score-{{ room.player2_id }}">0</span></p>
-            {% endif %}
+        <div class="final-scores" id="final-scores">
         </div>
         <a href="/battle" class="btn btn-primary">Back to Lobby</a>
     </div>
@@ -115,7 +102,7 @@
     const roomCode = "{{ room.invite_code }}";
     const userId = {{ user.user_id if user else 'null' }};
     const hostId = {{ room.host_id }};
-    let player2Id = {{ room.player2_id if room.player2_id else 'null' }};
+    const maxPlayers = {{ room.max_players }};
     
     let ws = null;
     let gameInterval = null;
@@ -125,6 +112,12 @@
     let gameActive = false;
     let isSelfReady = false;
     let playersReadyState = {};
+    let connectedPlayers = [];
+    
+    {% for player in room.players %}
+    connectedPlayers.push({{ player.user_id }});
+    playersReadyState[{{ player.user_id }}] = false;
+    {% endfor %}
     
     function connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -146,83 +139,99 @@
         };
     }
     
+    function getPlayerCardId(userId) {
+        return `player-card-${userId}`;
+    }
+    
+    function findEmptySlot() {
+        const emptySlots = document.querySelectorAll('.player-card.empty-slot');
+        return emptySlots.length > 0 ? emptySlots[0] : null;
+    }
+    
+    function createPlayerCard(userId, username, isHost) {
+        const emptySlot = findEmptySlot();
+        if (!emptySlot) return null;
+        
+        const playerIndex = connectedPlayers.length + 1;
+        const cardId = getPlayerCardId(userId);
+        
+        emptySlot.id = cardId;
+        emptySlot.classList.remove('empty-slot');
+        if (userId === window.userId) {
+            emptySlot.classList.add('player-self');
+        }
+        
+        emptySlot.innerHTML = `
+            <h3>Player ${playerIndex}${isHost ? ' (Host)' : ''}</h3>
+            <p class="player-name" id="player-name-${userId}">${username}</p>
+            <p class="player-score">Score: <span id="score-${userId}">0</span></p>
+            <p class="player-ready-status" id="ready-status-${userId}">
+                <span class="ready-indicator not-ready">Not Ready</span>
+            </p>
+        `;
+        
+        return emptySlot;
+    }
+    
+    function removePlayerCard(userId) {
+        const card = document.getElementById(getPlayerCardId(userId));
+        if (card) {
+            card.id = `player-card-empty-${Date.now()}`;
+            card.classList.add('empty-slot');
+            card.classList.remove('player-self');
+            card.innerHTML = `
+                <h3>Player</h3>
+                <p class="player-name">Waiting for player...</p>
+                <p class="player-score" style="opacity: 0.5;">Score: 0</p>
+            `;
+        }
+    }
+    
     function handleMessage(data) {
         switch(data.type) {
             case 'player_joined':
-                const joinedUserId2 = parseInt(data.user_id);
-                const isHostJoining = joinedUserId2 === hostId;
+                const joinedUserId = parseInt(data.user_id);
+                const isHostJoining = joinedUserId === hostId;
                 
-                if (!isHostJoining) {
-                    player2Id = joinedUserId2;
-                    
-                    const player2NameEl = document.getElementById('player2-name');
-                    if (player2NameEl && data.username) {
-                        player2NameEl.textContent = data.username;
-                    }
-                    
-                    const readyStatusEl = document.getElementById('ready-status-player2');
-                    if (readyStatusEl) {
-                        readyStatusEl.style.display = 'block';
-                    }
-                    
-                    const playerCardEl = document.getElementById('player-card-2');
-                    if (playerCardEl && userId === player2Id) {
-                        playerCardEl.classList.add('player-self');
-                    }
+                if (connectedPlayers.indexOf(joinedUserId) === -1) {
+                    connectedPlayers.push(joinedUserId);
                 }
                 
-                if (data.players && Array.isArray(data.players)) {
-                    for (const pid of data.players) {
-                        const playerId = parseInt(pid);
-                        if (playersReadyState[playerId] === undefined) {
-                            playersReadyState[playerId] = false;
-                        }
-                    }
-                }
-                
-                if (playersReadyState[joinedUserId2] === undefined) {
-                    playersReadyState[joinedUserId2] = false;
+                if (playersReadyState[joinedUserId] === undefined) {
+                    playersReadyState[joinedUserId] = false;
                 }
                 
                 if (!isHostJoining) {
-                    updateGameStatus('Player joined! Click Ready to prepare.');
+                    const existingCard = document.getElementById(getPlayerCardId(joinedUserId));
+                    if (!existingCard) {
+                        createPlayerCard(joinedUserId, data.username, false);
+                    }
                 }
                 
+                updateGameStatus(`${data.username} joined! (${connectedPlayers.length}/${maxPlayers} players)`);
                 updateAllReadyStatus();
                 break;
+                
             case 'player_left':
-                updateGameStatus('Player left. Waiting for new opponent...');
+                const leftUserId = parseInt(data.user_id);
+                const leftIndex = connectedPlayers.indexOf(leftUserId);
+                if (leftIndex !== -1) {
+                    connectedPlayers.splice(leftIndex, 1);
+                }
+                delete playersReadyState[leftUserId];
+                
+                removePlayerCard(leftUserId);
+                
+                if (connectedPlayers.length < 2) {
+                    updateGameStatus('Waiting for more players to join...');
+                } else {
+                    updateGameStatus(`Player left. (${connectedPlayers.length}/${maxPlayers} players)`);
+                }
+                
                 isSelfReady = false;
-                playersReadyState = {};
-                player2Id = null;
-                
-                const player2NameEl = document.getElementById('player2-name');
-                if (player2NameEl) {
-                    player2NameEl.textContent = 'Waiting for opponent...';
-                }
-                
-                const readyStatusEl = document.getElementById('ready-status-player2');
-                if (readyStatusEl) {
-                    readyStatusEl.style.display = 'none';
-                    const span = readyStatusEl.querySelector('.ready-indicator');
-                    if (span) {
-                        span.className = 'ready-indicator not-ready';
-                        span.textContent = 'Not Ready';
-                    }
-                }
-                
-                const scorePlayer2El = document.getElementById('score-player2');
-                if (scorePlayer2El) {
-                    scorePlayer2El.textContent = '0';
-                }
-                
-                const playerCardEl = document.getElementById('player-card-2');
-                if (playerCardEl) {
-                    playerCardEl.classList.remove('player-self');
-                }
-                
                 updateReadyButton();
                 updateAllReadyStatus();
+                
                 if (userId === hostId) {
                     const startBtn = document.getElementById('start-battle-btn');
                     if (startBtn) {
@@ -230,6 +239,7 @@
                     }
                 }
                 break;
+                
             case 'player_ready':
                 const readyUserId = parseInt(data.user_id);
                 const readyStatus = data.ready;
@@ -241,14 +251,7 @@
                         const pid = parseInt(p.user_id);
                         playersReadyState[pid] = p.ready;
                         
-                        let indicatorId;
-                        if (pid === hostId) {
-                            indicatorId = `ready-status-${pid}`;
-                        } else {
-                            indicatorId = 'ready-status-player2';
-                        }
-                        
-                        const indicator = document.getElementById(indicatorId);
+                        const indicator = document.getElementById(`ready-status-${pid}`);
                         if (indicator) {
                             const span = indicator.querySelector('.ready-indicator');
                             if (span) {
@@ -266,28 +269,27 @@
                 
                 updateAllReadyStatus();
                 break;
+                
             case 'game_started':
                 startGame();
                 break;
+                
             case 'score_update':
                 if (data.players) {
                     for (const [uid, playerData] of Object.entries(data.players)) {
                         const playerId = parseInt(uid);
-                        let scoreEl;
-                        if (playerId === hostId) {
-                            scoreEl = document.getElementById(`score-${uid}`);
-                        } else {
-                            scoreEl = document.getElementById('score-player2');
-                        }
+                        const scoreEl = document.getElementById(`score-${playerId}`);
                         if (scoreEl) {
                             scoreEl.textContent = playerData.score;
                         }
                     }
                 }
                 break;
+                
             case 'game_ended':
                 endGame(data.players);
                 break;
+                
             case 'error':
                 alert(data.message);
                 break;
@@ -313,7 +315,6 @@
         const startBtn = document.getElementById('start-battle-btn');
         if (!startBtn) return;
         
-        const connectedPlayers = [hostId, player2Id].filter(id => id !== null);
         if (connectedPlayers.length < 2) {
             startBtn.disabled = true;
             return;
@@ -426,31 +427,51 @@
         document.getElementById('game-timer').style.display = 'none';
         document.getElementById('battle-result').style.display = 'block';
         
-        let myScore = 0;
-        let opponentScore = 0;
+        const finalScoresContainer = document.getElementById('final-scores');
+        finalScoresContainer.innerHTML = '';
+        
+        let scoresList = [];
         
         if (players) {
             for (const [uid, playerData] of Object.entries(players)) {
-                const finalScoreEl = document.getElementById(`final-score-${uid}`);
-                if (finalScoreEl) {
-                    finalScoreEl.textContent = playerData.score;
-                }
-                
-                if (parseInt(uid) === userId) {
-                    myScore = playerData.score;
-                } else {
-                    opponentScore = playerData.score;
-                }
+                scoresList.push({
+                    userId: parseInt(uid),
+                    score: playerData.score
+                });
+            }
+        }
+        
+        scoresList.sort((a, b) => b.score - a.score);
+        
+        let myScore = 0;
+        for (const item of scoresList) {
+            const isSelf = item.userId === userId;
+            const rank = scoresList.indexOf(item) + 1;
+            
+            const p = document.createElement('p');
+            p.className = isSelf ? 'final-score-self' : '';
+            p.textContent = `#${rank} - User ${item.userId}: ${item.score} points`;
+            finalScoresContainer.appendChild(p);
+            
+            if (isSelf) {
+                myScore = item.score;
             }
         }
         
         const resultText = document.getElementById('result-text');
-        if (myScore > opponentScore) {
-            resultText.textContent = '🎉 You Win!';
-        } else if (myScore < opponentScore) {
-            resultText.textContent = '😢 You Lose!';
+        if (scoresList.length > 0) {
+            const highestScore = scoresList[0].score;
+            const myRank = scoresList.findIndex(s => s.userId === userId) + 1;
+            
+            if (myScore === highestScore && scoresList.filter(s => s.score === highestScore).length === 1) {
+                resultText.textContent = '🎉 You Win!';
+            } else if (myRank === scoresList.length) {
+                resultText.textContent = '😢 You Lose!';
+            } else {
+                resultText.textContent = `🏅 Rank #${myRank}!`;
+            }
         } else {
-            resultText.textContent = '🤝 It\'s a Tie!';
+            resultText.textContent = '🤝 Game Over!';
         }
     }
     

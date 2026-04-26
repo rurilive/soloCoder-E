@@ -281,9 +281,13 @@ async def create_room(
     request: Request,
     game_slug: str = Form(...),
     is_public: bool = Form(True),
+    max_players: int = Form(4),
     db: Session = Depends(get_db),
 ):
     user = await get_current_user_or_401(request)
+    
+    if max_players < 2 or max_players > 4:
+        max_players = 4
     
     game_plugin = GameRegistry.get(game_slug)
     if not game_plugin:
@@ -310,6 +314,7 @@ async def create_room(
         invite_code=invite_code,
         is_public=is_public,
         status="waiting",
+        max_players=max_players,
     )
     db.add(new_room)
     db.commit()
@@ -360,28 +365,58 @@ async def room_page(
     
     room_data, host_name, game_name, game_slug = room
     
-    if room_data.player2_id is not None:
-        if user["user_id"] != room_data.host_id and user["user_id"] != room_data.player2_id:
-            return templates.TemplateResponse(
-                request,
-                "error.html",
-                {
-                    "user": user,
-                    "error": "This room is full. Please try another room.",
-                },
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
+    max_players = room_data.max_players or 4
     
-    if room_data.status == "waiting" and room_data.player2_id is None:
+    room_state = manager.get_room_state(invite_code)
+    if room_state is None:
+        manager.init_room_state(invite_code, room_data.host_id)
+        room_state = manager.get_room_state(invite_code)
+    
+    if room_data.player2_id is not None and room_data.player2_id not in room_state["players"]:
+        room_state["players"][room_data.player2_id] = {"score": 0, "ready": False}
+    
+    current_players = list(room_state["players"].keys())
+    
+    is_user_in_room = user["user_id"] in current_players
+    is_room_full = len(current_players) >= max_players
+    
+    if is_room_full and not is_user_in_room:
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {
+                "user": user,
+                "error": f"This room is full (max {max_players} players). Please try another room.",
+            },
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    
+    if room_data.status == "waiting" and not is_user_in_room:
         if user["user_id"] != room_data.host_id:
-            room_data.player2_id = user["user_id"]
-            db.commit()
             manager.add_player_to_state(invite_code, user["user_id"])
+            if room_data.player2_id is None:
+                room_data.player2_id = user["user_id"]
+                db.commit()
     
-    player2_name = None
+    room_state = manager.get_room_state(invite_code)
+    current_players = list(room_state["players"].keys()) if room_state else [room_data.host_id]
+    
+    all_player_ids = set(current_players)
+    all_player_ids.add(room_data.host_id)
     if room_data.player2_id:
-        player2 = db.query(User).filter(User.id == room_data.player2_id).first()
-        player2_name = player2.username if player2 else None
+        all_player_ids.add(room_data.player2_id)
+    
+    players_info = []
+    for player_id in all_player_ids:
+        player = db.query(User).filter(User.id == player_id).first()
+        if player:
+            players_info.append({
+                "user_id": player_id,
+                "username": player.username,
+                "is_host": player_id == room_data.host_id,
+            })
+    
+    players_info.sort(key=lambda x: (not x["is_host"], x["user_id"]))
     
     return templates.TemplateResponse(
         request,
@@ -392,12 +427,12 @@ async def room_page(
                 "invite_code": room_data.invite_code,
                 "host_name": host_name,
                 "host_id": room_data.host_id,
-                "player2_name": player2_name,
-                "player2_id": room_data.player2_id,
                 "game_name": game_name,
                 "game_slug": game_slug,
                 "is_public": room_data.is_public,
                 "status": room_data.status,
+                "max_players": max_players,
+                "players": players_info,
             },
         },
     )
@@ -431,18 +466,34 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     
-    if room.player2_id is not None:
-        if user_id != room.host_id and user_id != room.player2_id:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
+    max_players = room.max_players or 4
+    
+    room_state = manager.get_room_state(invite_code)
+    if room_state is None:
+        manager.init_room_state(invite_code, room.host_id)
+        room_state = manager.get_room_state(invite_code)
+    
+    if room.player2_id is not None and room.player2_id not in room_state["players"]:
+        room_state["players"][room.player2_id] = {"score": 0, "ready": False}
+    
+    current_players = list(room_state["players"].keys())
+    is_user_in_room = user_id in current_players
+    is_room_full = len(current_players) >= max_players
+    
+    if is_room_full and not is_user_in_room:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
     
     await manager.connect(websocket, invite_code, user_id)
     
     try:
+        if user_id not in room_state["players"]:
+            room_state["players"][user_id] = {"score": 0, "ready": False}
+        
         room_state = manager.get_or_init_room_state(
             invite_code,
             room.host_id,
-            room.player2_id
+            None
         )
         
         await manager.broadcast_to_room(

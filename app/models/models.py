@@ -101,6 +101,7 @@ class GameRoom(Base):
     invite_code = Column(String(20), unique=True, index=True, nullable=False)
     is_public = Column(Boolean, default=True)
     status = Column(String(20), default="waiting")
+    max_players = Column(Integer, default=4)
     player2_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

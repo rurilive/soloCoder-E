@@ -90,7 +90,10 @@ class ConnectionManager:
                 if last_active is None:
                     last_active = db_room.last_active_at
                 
-                if last_active < cutoff_time:
+                if last_active is None:
+                    last_active = db_room.created_at
+                
+                if last_active is None or last_active < cutoff_time:
                     inactive_codes.add(db_room.invite_code)
             
             for room_code in self.room_last_active:

@@ -13,19 +13,25 @@
     </div>
 
     <div class="players-section">
-        <div class="player-card {% if user.user_id == room.host_id %}player-self{% endif %}">
+        <div class="player-card {% if user.user_id == room.host_id %}player-self{% endif %}" id="player-card-{{ room.host_id }}">
             <h3>Player 1 (Host)</h3>
             <p class="player-name">{{ room.host_name }}</p>
             <p class="player-score">Score: <span id="score-{{ room.host_id }}">0</span></p>
+            <p class="player-ready-status" id="ready-status-{{ room.host_id }}">
+                <span class="ready-indicator not-ready">Not Ready</span>
+            </p>
         </div>
         
         <div class="vs-text">VS</div>
         
-        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}">
+        <div class="player-card {% if user.user_id == room.player2_id %}player-self{% endif %}" id="player-card-{{ room.player2_id }}">
             <h3>Player 2</h3>
             {% if room.player2_name %}
                 <p class="player-name">{{ room.player2_name }}</p>
                 <p class="player-score">Score: <span id="score-{{ room.player2_id }}">0</span></p>
+                <p class="player-ready-status" id="ready-status-{{ room.player2_id }}">
+                    <span class="ready-indicator not-ready">Not Ready</span>
+                </p>
             {% else %}
                 <p class="player-name">Waiting for opponent...</p>
                 <p class="player-score">Score: 0</p>
@@ -50,8 +56,11 @@
     </div>
 
     <div class="battle-controls">
+        <button id="ready-btn" class="btn btn-secondary btn-large">
+            Ready
+        </button>
         {% if user.user_id == room.host_id %}
-            <button id="start-battle-btn" class="btn btn-primary btn-large" {% if not room.player2_id %}disabled{% endif %}>
+            <button id="start-battle-btn" class="btn btn-primary btn-large" disabled>
                 Start Battle
             </button>
         {% endif %}
@@ -113,6 +122,8 @@
     let currentScore = 0;
     let timeLeft = 30;
     let gameActive = false;
+    let isSelfReady = false;
+    let playersReadyState = {};
     
     function connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -137,16 +148,39 @@
     function handleMessage(data) {
         switch(data.type) {
             case 'player_joined':
-                updateGameStatus('Player joined! Ready to start.');
-                if (userId === hostId) {
-                    document.getElementById('start-battle-btn').disabled = false;
-                }
+                updateGameStatus('Player joined! Click Ready to prepare.');
                 break;
             case 'player_left':
                 updateGameStatus('Player left. Waiting for new opponent...');
+                isSelfReady = false;
+                playersReadyState = {};
+                updateReadyButton();
+                updateAllReadyStatus();
                 if (userId === hostId) {
                     document.getElementById('start-battle-btn').disabled = true;
                 }
+                break;
+            case 'player_ready':
+                const readyUserId = parseInt(data.user_id);
+                const readyStatus = data.ready;
+                
+                playersReadyState[readyUserId] = readyStatus;
+                
+                const readyIndicator = document.getElementById(`ready-status-${readyUserId}`);
+                if (readyIndicator) {
+                    const indicatorSpan = readyIndicator.querySelector('.ready-indicator');
+                    if (indicatorSpan) {
+                        indicatorSpan.className = `ready-indicator ${readyStatus ? 'ready' : 'not-ready'}`;
+                        indicatorSpan.textContent = readyStatus ? 'Ready' : 'Not Ready';
+                    }
+                }
+                
+                if (readyUserId === userId) {
+                    isSelfReady = readyStatus;
+                    updateReadyButton();
+                }
+                
+                updateAllReadyStatus();
                 break;
             case 'game_started':
                 startGame();
@@ -164,6 +198,51 @@
             case 'game_ended':
                 endGame(data.players);
                 break;
+            case 'error':
+                alert(data.message);
+                break;
+        }
+    }
+    
+    function updateReadyButton() {
+        const readyBtn = document.getElementById('ready-btn');
+        if (readyBtn) {
+            if (isSelfReady) {
+                readyBtn.textContent = 'Cancel Ready';
+                readyBtn.className = 'btn btn-warning btn-large';
+            } else {
+                readyBtn.textContent = 'Ready';
+                readyBtn.className = 'btn btn-secondary btn-large';
+            }
+        }
+    }
+    
+    function updateAllReadyStatus() {
+        if (userId !== hostId) return;
+        
+        const startBtn = document.getElementById('start-battle-btn');
+        if (!startBtn) return;
+        
+        const connectedPlayers = [hostId, player2Id].filter(id => id !== null);
+        if (connectedPlayers.length < 2) {
+            startBtn.disabled = true;
+            return;
+        }
+        
+        let allReady = true;
+        for (const playerId of connectedPlayers) {
+            if (!playersReadyState[playerId]) {
+                allReady = false;
+                break;
+            }
+        }
+        
+        startBtn.disabled = !allReady;
+        
+        if (allReady) {
+            updateGameStatus('All players ready! Host can start the game.');
+        } else {
+            updateGameStatus('Waiting for all players to be ready...');
         }
     }
     
@@ -298,6 +377,16 @@
     document.getElementById('start-battle-btn')?.addEventListener('click', function() {
         if (ws) {
             ws.send(JSON.stringify({ type: 'start_game' }));
+        }
+    });
+    
+    document.getElementById('ready-btn')?.addEventListener('click', function() {
+        if (ws) {
+            const newReadyState = !isSelfReady;
+            ws.send(JSON.stringify({
+                type: 'ready',
+                ready: newReadyState
+            }));
         }
     });
     

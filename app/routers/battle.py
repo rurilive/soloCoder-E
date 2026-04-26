@@ -443,21 +443,83 @@ async def websocket_endpoint(
             if not room_state:
                 continue
             
-            if message_type == "start_game":
+            if message_type == "ready":
+                is_ready = data.get("ready", True)
+                room_state["players"][user_id]["ready"] = is_ready
+                manager.update_last_active(invite_code)
+                
+                players_ready = []
+                for uid, pdata in room_state["players"].items():
+                    players_ready.append({
+                        "user_id": uid,
+                        "ready": pdata.get("ready", False)
+                    })
+                
+                await manager.broadcast_to_room(
+                    invite_code,
+                    {
+                        "type": "player_ready",
+                        "user_id": user_id,
+                        "ready": is_ready,
+                        "players": players_ready,
+                    },
+                )
+            
+            elif message_type == "start_game":
                 room_host = manager.get_room_host(invite_code)
                 if room_host is None:
                     room_host = room.host_id
                 
-                if user_id == room_host:
-                    room_state["game_started"] = True
-                    room_state["status"] = "playing"
-                    await manager.broadcast_to_room(
+                if user_id != room_host:
+                    await manager.send_to_user(
                         invite_code,
+                        user_id,
                         {
-                            "type": "game_started",
-                            "time_left": room_state.get("time_left", 30),
+                            "type": "error",
+                            "message": "Only the host can start the game"
                         },
                     )
+                    continue
+                
+                connected_players = manager.get_room_players(invite_code)
+                if len(connected_players) < 2:
+                    await manager.send_to_user(
+                        invite_code,
+                        user_id,
+                        {
+                            "type": "error",
+                            "message": "Need at least 2 players to start the game"
+                        },
+                    )
+                    continue
+                
+                all_ready = True
+                for uid in connected_players:
+                    player_data = room_state["players"].get(str(uid)) or room_state["players"].get(uid)
+                    if not player_data or not player_data.get("ready", False):
+                        all_ready = False
+                        break
+                
+                if not all_ready:
+                    await manager.send_to_user(
+                        invite_code,
+                        user_id,
+                        {
+                            "type": "error",
+                            "message": "All players must be ready to start the game"
+                        },
+                    )
+                    continue
+                
+                room_state["game_started"] = True
+                room_state["status"] = "playing"
+                await manager.broadcast_to_room(
+                    invite_code,
+                    {
+                        "type": "game_started",
+                        "time_left": room_state.get("time_left", 30),
+                    },
+                )
             
             elif message_type == "score_update":
                 score = data.get("score", 0)

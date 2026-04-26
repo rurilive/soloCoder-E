@@ -820,6 +820,27 @@ body {
     font-weight: bold;
 }
 
+.player-ready-status {
+    margin-top: 0.5rem;
+}
+
+.ready-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.ready-indicator.ready {
+    background-color: #10b981;
+    color: white;
+}
+
+.ready-indicator.not-ready {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
 .vs-text {
     font-size: 2rem;
     font-weight: bold;

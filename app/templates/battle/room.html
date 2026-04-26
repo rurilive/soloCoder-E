@@ -114,7 +114,7 @@
     const roomCode = "{{ room.invite_code }}";
     const userId = {{ user.user_id if user else 'null' }};
     const hostId = {{ room.host_id }};
-    const player2Id = {{ room.player2_id if room.player2_id else 'null' }};
+    let player2Id = {{ room.player2_id if room.player2_id else 'null' }};
     
     let ws = null;
     let gameInterval = null;
@@ -149,15 +149,40 @@
         switch(data.type) {
             case 'player_joined':
                 updateGameStatus('Player joined! Click Ready to prepare.');
+                if (data.players && Array.isArray(data.players)) {
+                    for (const pid of data.players) {
+                        const playerId = parseInt(pid);
+                        if (playerId !== hostId && playerId !== userId) {
+                            player2Id = playerId;
+                        }
+                        if (playersReadyState[playerId] === undefined) {
+                            playersReadyState[playerId] = false;
+                        }
+                    }
+                }
+                if (data.user_id) {
+                    const joinedUserId = parseInt(data.user_id);
+                    if (joinedUserId !== hostId && joinedUserId !== userId) {
+                        player2Id = joinedUserId;
+                    }
+                    if (playersReadyState[joinedUserId] === undefined) {
+                        playersReadyState[joinedUserId] = false;
+                    }
+                }
+                updateAllReadyStatus();
                 break;
             case 'player_left':
                 updateGameStatus('Player left. Waiting for new opponent...');
                 isSelfReady = false;
                 playersReadyState = {};
+                player2Id = null;
                 updateReadyButton();
                 updateAllReadyStatus();
                 if (userId === hostId) {
-                    document.getElementById('start-battle-btn').disabled = true;
+                    const startBtn = document.getElementById('start-battle-btn');
+                    if (startBtn) {
+                        startBtn.disabled = true;
+                    }
                 }
                 break;
             case 'player_ready':
@@ -165,6 +190,13 @@
                 const readyStatus = data.ready;
                 
                 playersReadyState[readyUserId] = readyStatus;
+                
+                if (data.players && Array.isArray(data.players)) {
+                    for (const p of data.players) {
+                        const pid = parseInt(p.user_id);
+                        playersReadyState[pid] = p.ready;
+                    }
+                }
                 
                 const readyIndicator = document.getElementById(`ready-status-${readyUserId}`);
                 if (readyIndicator) {

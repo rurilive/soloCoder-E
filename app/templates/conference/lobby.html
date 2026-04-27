@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}会议大厅 - 会议系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.lobby-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.create-room-form, .join-room-form {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.rooms-section h3 {
+    margin-bottom: 1rem;
+}
+
+.room-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.room-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #007bff;
+}
+
+.room-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.room-meta {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.room-meta span {
+    margin-right: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lobby-container">
+    <div class="lobby-header">
+        <h2>会议大厅</h2>
+    </div>
+    
+    {% if not user %}
+    <div class="alert alert-info">
+        请先 <a href="/auth/login">登录</a> 后再创建或加入会议
+    </div>
+    {% endif %}
+    
+    <div class="create-room-form">
+        <h3>创建新会议</h3>
+        <form method="POST" action="/conference/create">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="room_name">会议名称</label>
+                    <input type="text" id="room_name" name="name" placeholder="我的会议" value="我的会议">
+                </div>
+                <div class="form-group">
+                    <label for="max_participants">最大人数</label>
+                    <select id="max_participants" name="max_participants">
+                        <option value="4">4人</option>
+                        <option value="10" selected>10人</option>
+                        <option value="20">20人</option>
+                        <option value="50">50人</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="is_public">公开会议</label>
+                    <select id="is_public" name="is_public">
+                        <option value="true" selected>是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" {% if not user %}disabled{% endif %}>创建会议</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="join-room-form">
+        <h3>加入会议</h3>
+        <form method="POST" action="/conference/join">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="room_code">房间码</label>
+                    <input type="text" id="room_code" name="room_code" placeholder="输入房间码" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-secondary" {% if not user %}disabled{% endif %}>加入会议</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    <div class="rooms-section">
+        <h3>公开会议 ({{ rooms|length }})</h3>
+        {% if rooms %}
+        <div class="room-list">
+            {% for room in rooms %}
+            <div class="room-card">
+                <h4>{{ room.name }}</h4>
+                <div class="room-meta">
+                    <span>房间码: {{ room.room_code }}</span>
+                    <span>人数: {{ room.participant_count }}/{{ room.max_participants }}</span>
+                </div>
+                <a href="/conference/room/{{ room.room_code }}" class="btn btn-primary btn-small">加入</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>暂无公开会议</p>
+            <p>创建一个新会议开始吧！</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

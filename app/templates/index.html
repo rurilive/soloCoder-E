@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}会议系统 - 首页{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="hero-section">
+        <h1>实时会议系统</h1>
+        <p>支持多人视频通话、屏幕共享、实时聊天和会议录制</p>
+        <div class="hero-actions">
+            {% if user %}
+            <a href="/conference/" class="btn btn-primary btn-large">进入会议大厅</a>
+            {% else %}
+            <a href="/auth/login" class="btn btn-primary btn-large">登录</a>
+            <a href="/auth/register" class="btn btn-secondary btn-large">注册</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="features-section">
+        <div class="feature">
+            <div class="feature-icon">📹</div>
+            <h3>多人视频通话</h3>
+            <p>支持多人实时视频会议，高清画质</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🖥️</div>
+            <h3>屏幕共享</h3>
+            <p>一键共享您的屏幕，方便演示和协作</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">💬</div>
+            <h3>实时聊天</h3>
+            <p>会议中实时文字聊天，支持历史记录</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🎥</div>
+            <h3>会议录制</h3>
+            <p>一键录制会议内容，随时回放查看</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

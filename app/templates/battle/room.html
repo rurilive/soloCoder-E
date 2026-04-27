@@ -306,6 +306,7 @@
     function updateReadyButton() {
         const readyBtn = document.getElementById('ready-btn');
         if (readyBtn) {
+            readyBtn.disabled = false;
             if (isSelfReady) {
                 readyBtn.textContent = 'Cancel Ready';
                 readyBtn.className = 'btn btn-warning btn-large';

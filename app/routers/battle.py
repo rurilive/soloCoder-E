@@ -634,6 +634,46 @@ async def websocket_endpoint(
                             "players": room_state["players"],
                         },
                     )
+            
+            elif message_type == "restart_game":
+                room_host = manager.get_room_host(invite_code)
+                if room_host is None:
+                    room_host = room.host_id
+                
+                if user_id != room_host:
+                    await manager.send_to_user(
+                        invite_code,
+                        user_id,
+                        {
+                            "type": "error",
+                            "message": "Only the host can restart the game"
+                        },
+                    )
+                    continue
+                
+                room_state = manager.get_room_state(invite_code)
+                if room_state:
+                    room_state["status"] = "waiting"
+                    room_state["game_started"] = False
+                    
+                    for uid in room_state["players"]:
+                        room_state["players"][uid]["score"] = 0
+                        room_state["players"][uid]["ready"] = False
+                    
+                    players_ready = []
+                    for uid, pdata in room_state["players"].items():
+                        players_ready.append({
+                            "user_id": uid,
+                            "ready": pdata.get("ready", False)
+                        })
+                    
+                    await manager.broadcast_to_room(
+                        invite_code,
+                        {
+                            "type": "game_restarted",
+                            "players": players_ready,
+                        },
+                    )
     
     except WebSocketDisconnect:
         manager.disconnect(invite_code, user_id)

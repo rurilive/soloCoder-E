@@ -92,7 +92,10 @@
         <h2 id="result-text">Battle Over!</h2>
         <div class="final-scores" id="final-scores">
         </div>
-        <a href="/battle" class="btn btn-primary">Back to Lobby</a>
+        <div class="battle-result-buttons">
+            <button id="restart-game-btn" class="btn btn-primary" style="display: none;">Play Again</button>
+            <a href="/battle" class="btn btn-secondary">Back to Lobby</a>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -288,6 +291,10 @@
                 
             case 'game_ended':
                 endGame(data.players);
+                break;
+                
+            case 'game_restarted':
+                restartGame(data.players);
                 break;
                 
             case 'error':
@@ -566,6 +573,82 @@
                 resultText.textContent = '🤝 Game Over!';
             }
         }
+        
+        const restartBtn = document.getElementById('restart-game-btn');
+        if (restartBtn) {
+            if (userId === hostId) {
+                restartBtn.style.display = 'inline-block';
+            } else {
+                restartBtn.style.display = 'none';
+            }
+        }
+    }
+    
+    function restartGame(players) {
+        gameActive = false;
+        currentScore = 0;
+        timeLeft = 30;
+        isSelfReady = false;
+        
+        if (gameInterval) {
+            clearInterval(gameInterval);
+        }
+        if (moleTimeout) {
+            clearTimeout(moleTimeout);
+        }
+        
+        for (const playerId of connectedPlayers) {
+            playersReadyState[playerId] = false;
+        }
+        
+        if (players && Array.isArray(players)) {
+            for (const p of players) {
+                const pid = parseInt(p.user_id);
+                playersReadyState[pid] = p.ready;
+                
+                const indicator = document.getElementById(`ready-status-${pid}`);
+                if (indicator) {
+                    const span = indicator.querySelector('.ready-indicator');
+                    if (span) {
+                        span.className = `ready-indicator ${p.ready ? 'ready' : 'not-ready'}`;
+                        span.textContent = p.ready ? 'Ready' : 'Not Ready';
+                    }
+                }
+                
+                const scoreEl = document.getElementById(`score-${pid}`);
+                if (scoreEl) {
+                    scoreEl.textContent = '0';
+                }
+            }
+        }
+        
+        const battleResult = document.getElementById('battle-result');
+        if (battleResult) {
+            battleResult.style.display = 'none';
+        }
+        
+        const battleGameBoard = document.getElementById('battle-game-board');
+        if (battleGameBoard) {
+            battleGameBoard.style.display = 'none';
+        }
+        
+        const gameTimer = document.getElementById('game-timer');
+        if (gameTimer) {
+            gameTimer.style.display = 'none';
+        }
+        
+        const battleControls = document.getElementById('battle-controls');
+        if (battleControls) {
+            battleControls.style.display = 'block';
+        }
+        
+        const gameStatusContainer = document.getElementById('game-status-container');
+        if (gameStatusContainer) {
+            gameStatusContainer.style.display = 'block';
+        }
+        
+        updateReadyButton();
+        updateAllReadyStatus();
     }
     
     document.getElementById('copy-code-btn')?.addEventListener('click', function() {
@@ -594,6 +677,12 @@
                 type: 'ready',
                 ready: newReadyState
             }));
+        }
+    });
+    
+    document.getElementById('restart-game-btn')?.addEventListener('click', function() {
+        if (ws) {
+            ws.send(JSON.stringify({ type: 'restart_game' }));
         }
     });
     

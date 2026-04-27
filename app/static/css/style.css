@@ -901,6 +901,13 @@ body {
     font-size: 1.3rem;
 }
 
+.battle-result-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
 .error-container {
     display: flex;
     justify-content: center;

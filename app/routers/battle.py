@@ -517,6 +517,17 @@ async def websocket_endpoint(
                 continue
             
             if message_type == "ready":
+                if room_state.get("game_started") or room_state.get("status") == "playing":
+                    await manager.send_to_user(
+                        invite_code,
+                        user_id,
+                        {
+                            "type": "error",
+                            "message": "Cannot change ready state after game has started"
+                        },
+                    )
+                    continue
+                
                 is_ready = data.get("ready", True)
                 if user_id not in room_state["players"]:
                     room_state["players"][user_id] = {"score": 0, "ready": is_ready}

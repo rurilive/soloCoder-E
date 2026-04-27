@@ -351,6 +351,13 @@
     }
     
     function startGame() {
+        if (gameInterval) {
+            clearInterval(gameInterval);
+        }
+        if (moleTimeout) {
+            clearTimeout(moleTimeout);
+        }
+        
         gameActive = true;
         currentScore = 0;
         timeLeft = 30;
@@ -360,6 +367,19 @@
         document.getElementById('battle-game-board').style.display = 'grid';
         document.getElementById('game-timer').style.display = 'block';
         document.getElementById('battle-time').textContent = timeLeft;
+        
+        const readyBtn = document.getElementById('ready-btn');
+        if (readyBtn) {
+            readyBtn.disabled = true;
+        }
+        
+        const holes = document.querySelectorAll('#battle-game-board .hole');
+        holes.forEach(hole => {
+            const mole = hole.querySelector('.mole');
+            if (mole) {
+                mole.classList.remove('up');
+            }
+        });
         
         setupGameBoard();
         
@@ -410,7 +430,19 @@
     function showRandomMole() {
         if (!gameActive) return;
         
+        if (moleTimeout) {
+            clearTimeout(moleTimeout);
+        }
+        
         const holes = document.querySelectorAll('#battle-game-board .hole');
+        
+        holes.forEach(hole => {
+            const mole = hole.querySelector('.mole');
+            if (mole) {
+                mole.classList.remove('up');
+            }
+        });
+        
         const randomHole = holes[Math.floor(Math.random() * holes.length)];
         const mole = randomHole.querySelector('.mole');
         
@@ -501,6 +533,9 @@
     });
     
     document.getElementById('ready-btn')?.addEventListener('click', function() {
+        if (gameActive) {
+            return;
+        }
         if (ws) {
             const newReadyState = !isSelfReady;
             ws.send(JSON.stringify({

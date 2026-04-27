@@ -288,4 +288,71 @@ class ConferenceManager {
   │                                          │                                    │
   │◄═══════════════════════════════════════════════════════════════════════════►│
   │                              WebRTC P2P 连接建立                              │
-  │                              视频/音频数据直接传输
+  │                              视频/音频数据直接传输                              │
+  │◄═══════════════════════════════════════════════════════════════════════════►│
+```
+
+---
+
+## 4. 依赖配置
+
+需要添加的 Python 依赖（使用 uv 添加）：
+```bash
+uv add python-multipart aiofiles
+```
+
+pyproject.toml 依赖：
+```toml
+dependencies = [
+    # ... 现有依赖
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "jinja2>=3.1.2",
+    "sqlalchemy>=2.0.25",
+    "python-multipart>=0.0.6",
+    "websockets>=12.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-jose[cryptography]>=3.3.0",
+    "aiofiles>=23.2.1",
+    "pydantic-settings>=2.0.0",
+]
+```
+
+---
+
+## 5. 安全考虑
+
+1. **身份认证**: 复用现有用户系统，WebSocket 连接需验证 token
+2. **房间权限**: 只有房主可以控制录制、踢出参与者等
+3. **录制权限**: 需获得所有参与者同意才能录制（可配置）
+4. **文件安全**: 录制文件需权限校验，防止未授权访问
+
+---
+
+## 6. 实施计划
+
+| 阶段 | 任务 |
+|-----|------|
+| **Phase 1** | 后端房间管理 API + 基础 WebSocket 信令 |
+| **Phase 2** | 前端会议室 UI + 基础 WebRTC 1v1 视频 |
+| **Phase 3** | 多人视频支持 + 屏幕共享 |
+| **Phase 4** | 实时聊天功能 |
+| **Phase 5** | 录制功能（客户端方案） |
+| **Phase 6** | 测试与优化 |
+
+---
+
+## 7. 与现有项目集成
+
+- 复用现有的用户认证系统 (`app/auth.py`)
+- 复用现有的 WebSocket 连接管理模式 (`app/routers/battle.py` 中的 `ConnectionManager`)
+- 复用现有的模板系统和静态文件管理
+- 绑定端口: `run.py` 已支持 `--port` 参数，默认已设为 `5555`，且强制绑定 `0.0.0.0`
+
+---
+
+## 8. 配置
+
+- **绑定地址**: 0.0.0.0
+- **端口**: 5555
+- **启动命令**: `python run.py` 或 `uv run uvicorn app.main:app --host 0.0.0.0 --port 5555`

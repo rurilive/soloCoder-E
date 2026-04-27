@@ -155,7 +155,7 @@
         const emptySlot = findEmptySlot();
         if (!emptySlot) return null;
         
-        const playerIndex = connectedPlayers.length + 1;
+        const playerIndex = connectedPlayers.length;
         const cardId = getPlayerCardId(userId);
         
         emptySlot.id = cardId;

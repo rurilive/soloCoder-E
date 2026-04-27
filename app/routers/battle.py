@@ -156,6 +156,9 @@ class ConnectionManager:
                 if room_code in self.room_last_active:
                     del self.room_last_active[room_code]
             else:
+                if room_code in self.room_states:
+                    if user_id in self.room_states[room_code]["players"]:
+                        del self.room_states[room_code]["players"][user_id]
                 self.update_last_active(room_code)
 
     async def broadcast_to_room(self, room_code: str, message: Dict[str, Any]):
@@ -627,11 +630,21 @@ async def websocket_endpoint(
                 room_state = manager.get_room_state(invite_code)
                 if room_state:
                     room_state["status"] = "finished"
+                    
+                    connected_players = manager.get_room_players(invite_code)
+                    current_players = {}
+                    for uid in connected_players:
+                        str_uid = str(uid)
+                        if uid in room_state["players"]:
+                            current_players[uid] = room_state["players"][uid]
+                        elif str_uid in room_state["players"]:
+                            current_players[uid] = room_state["players"][str_uid]
+                    
                     await manager.broadcast_to_room(
                         invite_code,
                         {
                             "type": "game_ended",
-                            "players": room_state["players"],
+                            "players": current_players,
                         },
                     )
             

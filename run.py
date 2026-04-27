@@ -131,7 +131,7 @@ def main():
 
     check_dependencies()
 
-    run_server(host=host, port=port, reload=reload)
+    run_server(host="0.0.0.0", port=port, reload=reload)
 
 
 if __name__ == "__main__":

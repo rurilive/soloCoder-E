@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}我的录制 - 会议系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.recording-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.recording-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.recording-header h2 {
+    margin: 0;
+}
+
+.recording-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recording-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.recording-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.recording-info {
+    flex: 1;
+}
+
+.recording-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.recording-meta {
+    color: #666;
+    font-size: 0.875rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.recording-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.recording-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.empty-list {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.empty-list-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-list p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recording-container">
+    <div class="recording-header">
+        <h2>我的录制</h2>
+        <a href="/conference/" class="btn btn-secondary btn-small">返回会议大厅</a>
+    </div>
+    
+    {% if recordings %}
+    <div class="recording-list">
+        {% for recording in recordings %}
+        <div class="recording-item">
+            <div class="recording-icon">🎥</div>
+            <div class="recording-info">
+                <div class="recording-name">{{ recording.filename }}</div>
+                <div class="recording-meta">
+                    <span>📅 {{ recording.created_at[:10] if recording.created_at else '-' }}</span>
+                    <span>⏱️ {{ recording.duration }}秒</span>
+                    <span>📁 {{ (recording.size / 1024 / 1024)|round(2) }} MB</span>
+                </div>
+            </div>
+            <div class="recording-actions">
+                <a href="/recording/api/download/{{ recording.id }}" class="btn btn-primary btn-small">下载</a>
+                <button class="btn btn-secondary btn-small" onclick="deleteRecording({{ recording.id }})">删除</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-list">
+        <div class="empty-list-icon">📹</div>
+        <h3>暂无录制文件</h3>
+        <p>在会议中点击录制按钮，录制内容会保存在这里</p>
+        <a href="/conference/" class="btn btn-primary">创建会议</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function deleteRecording(recordingId) {
+    if (!confirm('确定要删除这个录制文件吗？此操作不可恢复。')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/recording/api/${recordingId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('删除失败');
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        alert('删除失败: ' + err.message);
+    }
+}
+</script>
+{% endblock %}

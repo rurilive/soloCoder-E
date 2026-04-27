@@ -33,7 +33,7 @@
         {% endfor %}
     </div>
 
-    <div class="game-status">
+    <div id="game-status-container" class="game-status">
         <span id="game-status">
             {% if room.players|length >= 2 and room.status == 'waiting' %}
                 {{ room.players|length }} players connected! Waiting for all to be ready...
@@ -43,11 +43,11 @@
         </span>
     </div>
 
-    <div class="game-timer" style="display: none;">
+    <div id="game-timer" class="game-timer" style="display: none;">
         <span>Time Left: <span id="battle-time">30</span>s</span>
     </div>
 
-    <div class="battle-controls">
+    <div id="battle-controls" class="battle-controls">
         <button id="ready-btn" class="btn btn-secondary btn-large">
             Ready
         </button>
@@ -362,11 +362,30 @@
         currentScore = 0;
         timeLeft = 30;
         
-        document.getElementById('game-status').style.display = 'none';
-        document.getElementById('battle-controls').style.display = 'none';
-        document.getElementById('battle-game-board').style.display = 'grid';
-        document.getElementById('game-timer').style.display = 'block';
-        document.getElementById('battle-time').textContent = timeLeft;
+        const gameStatusContainer = document.getElementById('game-status-container');
+        if (gameStatusContainer) {
+            gameStatusContainer.style.display = 'none';
+        }
+        
+        const battleControls = document.getElementById('battle-controls');
+        if (battleControls) {
+            battleControls.style.display = 'none';
+        }
+        
+        const battleGameBoard = document.getElementById('battle-game-board');
+        if (battleGameBoard) {
+            battleGameBoard.style.display = 'grid';
+        }
+        
+        const gameTimer = document.getElementById('game-timer');
+        if (gameTimer) {
+            gameTimer.style.display = 'block';
+        }
+        
+        const battleTime = document.getElementById('battle-time');
+        if (battleTime) {
+            battleTime.textContent = timeLeft;
+        }
         
         const readyBtn = document.getElementById('ready-btn');
         if (readyBtn) {
@@ -385,7 +404,10 @@
         
         gameInterval = setInterval(() => {
             timeLeft--;
-            document.getElementById('battle-time').textContent = timeLeft;
+            const battleTimeEl = document.getElementById('battle-time');
+            if (battleTimeEl) {
+                battleTimeEl.textContent = timeLeft;
+            }
             
             if (timeLeft <= 0) {
                 clearInterval(gameInterval);
@@ -405,6 +427,8 @@
                 if (!gameActive) return;
                 
                 const mole = hole.querySelector('.mole');
+                if (!mole) return;
+                
                 if (mole.classList.contains('up')) {
                     mole.classList.remove('up');
                     currentScore += 10;
@@ -436,6 +460,10 @@
         
         const holes = document.querySelectorAll('#battle-game-board .hole');
         
+        if (holes.length === 0) {
+            return;
+        }
+        
         holes.forEach(hole => {
             const mole = hole.querySelector('.mole');
             if (mole) {
@@ -444,7 +472,14 @@
         });
         
         const randomHole = holes[Math.floor(Math.random() * holes.length)];
+        if (!randomHole) {
+            return;
+        }
+        
         const mole = randomHole.querySelector('.mole');
+        if (!mole) {
+            return;
+        }
         
         mole.classList.add('up');
         
@@ -464,12 +499,25 @@
             clearTimeout(moleTimeout);
         }
         
-        document.getElementById('battle-game-board').style.display = 'none';
-        document.getElementById('game-timer').style.display = 'none';
-        document.getElementById('battle-result').style.display = 'block';
+        const battleGameBoard = document.getElementById('battle-game-board');
+        if (battleGameBoard) {
+            battleGameBoard.style.display = 'none';
+        }
+        
+        const gameTimer = document.getElementById('game-timer');
+        if (gameTimer) {
+            gameTimer.style.display = 'none';
+        }
+        
+        const battleResult = document.getElementById('battle-result');
+        if (battleResult) {
+            battleResult.style.display = 'block';
+        }
         
         const finalScoresContainer = document.getElementById('final-scores');
-        finalScoresContainer.innerHTML = '';
+        if (finalScoresContainer) {
+            finalScoresContainer.innerHTML = '';
+        }
         
         let scoresList = [];
         
@@ -485,34 +533,38 @@
         scoresList.sort((a, b) => b.score - a.score);
         
         let myScore = 0;
-        for (const item of scoresList) {
-            const isSelf = item.userId === userId;
-            const rank = scoresList.indexOf(item) + 1;
-            
-            const p = document.createElement('p');
-            p.className = isSelf ? 'final-score-self' : '';
-            p.textContent = `#${rank} - User ${item.userId}: ${item.score} points`;
-            finalScoresContainer.appendChild(p);
-            
-            if (isSelf) {
-                myScore = item.score;
+        if (finalScoresContainer) {
+            for (const item of scoresList) {
+                const isSelf = item.userId === userId;
+                const rank = scoresList.indexOf(item) + 1;
+                
+                const p = document.createElement('p');
+                p.className = isSelf ? 'final-score-self' : '';
+                p.textContent = `#${rank} - User ${item.userId}: ${item.score} points`;
+                finalScoresContainer.appendChild(p);
+                
+                if (isSelf) {
+                    myScore = item.score;
+                }
             }
         }
         
         const resultText = document.getElementById('result-text');
-        if (scoresList.length > 0) {
-            const highestScore = scoresList[0].score;
-            const myRank = scoresList.findIndex(s => s.userId === userId) + 1;
-            
-            if (myScore === highestScore && scoresList.filter(s => s.score === highestScore).length === 1) {
-                resultText.textContent = '🎉 You Win!';
-            } else if (myRank === scoresList.length) {
-                resultText.textContent = '😢 You Lose!';
+        if (resultText) {
+            if (scoresList.length > 0) {
+                const highestScore = scoresList[0].score;
+                const myRank = scoresList.findIndex(s => s.userId === userId) + 1;
+                
+                if (myScore === highestScore && scoresList.filter(s => s.score === highestScore).length === 1) {
+                    resultText.textContent = '🎉 You Win!';
+                } else if (myRank === scoresList.length) {
+                    resultText.textContent = '😢 You Lose!';
+                } else {
+                    resultText.textContent = `🏅 Rank #${myRank}!`;
+                }
             } else {
-                resultText.textContent = `🏅 Rank #${myRank}!`;
+                resultText.textContent = '🤝 Game Over!';
             }
-        } else {
-            resultText.textContent = '🤝 Game Over!';
         }
     }
     

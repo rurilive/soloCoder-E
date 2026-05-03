@@ -40,7 +40,7 @@ class BookmarkCreate(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/reader/{book_id}", response_class=HTMLResponse)
@@ -48,7 +48,7 @@ async def reader(request: Request, book_id: int, db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
-    return templates.TemplateResponse("reader.html", {"request": request, "book": book})
+    return templates.TemplateResponse(request, "reader.html", context={"book": book})
 
 
 @app.post("/upload/")

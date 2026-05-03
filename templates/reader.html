@@ -71,8 +71,23 @@
             </div>
             
             <div class="reading-progress" id="readingProgress">
-                <input type="range" id="progressSlider" min="0" max="100" value="0">
-                <span class="progress-text" id="progressText">0%</span>
+                <div class="pagination-controls" id="paginationControls">
+                    <button class="btn btn-icon" id="prevPageBtn" title="上一页">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <span class="page-info" id="pageInfo">第 1 页 / 共 1 页</span>
+                    <button class="btn btn-icon" id="nextPageBtn" title="下一页">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <div class="scroll-controls" id="scrollControls">
+                    <input type="range" id="progressSlider" min="0" max="100" value="0">
+                    <span class="progress-text" id="progressText">0%</span>
+                </div>
             </div>
         </main>
         
@@ -145,6 +160,35 @@
                     </div>
                 </div>
                 <div class="setting-item">
+                    <label>字体</label>
+                    <select class="font-select" id="fontSelect">
+                        <option value="system">系统默认</option>
+                        <option value="SimSun">宋体</option>
+                        <option value="SimHei">黑体</option>
+                        <option value="Microsoft YaHei">微软雅黑</option>
+                        <option value="KaiTi">楷体</option>
+                        <option value="FangSong">仿宋</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>字体颜色</label>
+                    <div class="color-options">
+                        <button class="color-btn color-dark" data-color="#333333" title="深灰色"></button>
+                        <button class="color-btn color-black" data-color="#000000" title="黑色"></button>
+                        <button class="color-btn color-darkgray" data-color="#555555" title="深灰"></button>
+                        <button class="color-btn color-darkblue" data-color="#1a365d" title="深蓝"></button>
+                        <button class="color-btn color-darkgreen" data-color="#14532d" title="深绿"></button>
+                        <button class="color-btn color-darkred" data-color="#742a2a" title="深红"></button>
+                    </div>
+                    <div class="custom-color">
+                        <label for="customColorPicker">自定义颜色:</label>
+                        <input type="color" id="customColorPicker" value="#333333">
+                    </div>
+                </div>
+                <div class="setting-item">
                     <label>阅读模式</label>
                     <div class="reading-mode-options">
                         <button class="reading-mode-btn active" data-mode="chapter" title="章节模式">
@@ -154,6 +198,19 @@
                         <button class="reading-mode-btn" data-mode="full" title="原文模式">
                             <span class="mode-icon">📖</span>
                             <span class="mode-text">原文模式</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>翻页模式</label>
+                    <div class="pagination-options">
+                        <button class="pagination-btn active" data-mode="scroll" title="滚动模式">
+                            <span class="mode-icon">📜</span>
+                            <span class="mode-text">滚动模式</span>
+                        </button>
+                        <button class="pagination-btn" data-mode="page" title="分页模式">
+                            <span class="mode-icon">📄</span>
+                            <span class="mode-text">分页模式</span>
                         </button>
                     </div>
                 </div>

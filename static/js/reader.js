@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentTheme = 'light';
     let readingMode = 'chapter';
     let fullContentLoaded = false;
+    let fontFamily = 'system';
+    let fontColor = '#333333';
+    let paginationMode = 'scroll';
+    let currentPage = 1;
+    let totalPages = 1;
+    let pages = [];
+    let currentChapterContent = '';
     
     const state = {
         chapterIndex: 0,
@@ -24,6 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const savedLineHeight = localStorage.getItem('ereader_lineHeight');
         const savedTheme = localStorage.getItem('ereader_theme');
         const savedReadingMode = localStorage.getItem('ereader_readingMode');
+        const savedFontFamily = localStorage.getItem('ereader_fontFamily');
+        const savedFontColor = localStorage.getItem('ereader_fontColor');
+        const savedPaginationMode = localStorage.getItem('ereader_paginationMode');
         
         if (savedFontSize) {
             fontSize = parseInt(savedFontSize);
@@ -43,6 +53,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (savedReadingMode) {
             readingMode = savedReadingMode;
             updateReadingModeUI();
+        }
+        
+        if (savedFontFamily) {
+            fontFamily = savedFontFamily;
+            updateFontFamily();
+        }
+        
+        if (savedFontColor) {
+            fontColor = savedFontColor;
+            updateFontColor();
+        }
+        
+        if (savedPaginationMode) {
+            paginationMode = savedPaginationMode;
+            updatePaginationModeUI();
         }
     }
     
@@ -77,15 +102,24 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/chapters/${chapter.id}`)
             .then(response => response.json())
             .then(chapterData => {
-                const pageContent = document.getElementById('pageContent');
-                pageContent.innerHTML = formatContent(chapterData.content);
+                currentChapterContent = chapterData.content;
+                
+                if (paginationMode === 'page') {
+                    paginateContent(currentChapterContent);
+                    currentPage = 1;
+                    renderPage();
+                } else {
+                    const pageContent = document.getElementById('pageContent');
+                    pageContent.innerHTML = formatContent(currentChapterContent);
+                }
                 
                 document.getElementById('currentChapterTitle').textContent = chapter.title;
                 
                 updateChapterButtons();
                 highlightCurrentTOC();
                 
-                if (scrollToTop) {
+                if (scrollToTop && paginationMode === 'scroll') {
+                    const pageContent = document.getElementById('pageContent');
                     pageContent.scrollTop = 0;
                     updateProgress();
                 }
@@ -109,6 +143,110 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
     
+    function paginateContent(content) {
+        const pageContent = document.getElementById('pageContent');
+        const containerHeight = pageContent.clientHeight - 40;
+        const charPerPage = Math.floor(containerHeight * (fontSize / 20) * 1.5);
+        
+        const formattedContent = formatContent(content);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = formattedContent;
+        const textContent = tempDiv.textContent || tempDiv.innerText;
+        
+        pages = [];
+        let currentPageContent = '';
+        let charCount = 0;
+        
+        const paragraphs = content.split('\n\n');
+        
+        paragraphs.forEach(paragraph => {
+            const trimmed = paragraph.trim();
+            if (!trimmed) return;
+            
+            const paraLength = trimmed.length;
+            
+            if (charCount + paraLength > charPerPage && charCount > 0) {
+                pages.push(currentPageContent);
+                currentPageContent = `<p>${escapeHtml(trimmed)}</p>`;
+                charCount = paraLength;
+            } else {
+                currentPageContent += `<p>${escapeHtml(trimmed)}</p>`;
+                charCount += paraLength;
+            }
+        });
+        
+        if (currentPageContent) {
+            pages.push(currentPageContent);
+        }
+        
+        totalPages = pages.length || 1;
+        updatePageInfo();
+    }
+    
+    function renderPage() {
+        if (paginationMode !== 'page' || pages.length === 0) return;
+        
+        const pageContent = document.getElementById('pageContent');
+        const pageIndex = currentPage - 1;
+        
+        if (pageIndex >= 0 && pageIndex < pages.length) {
+            pageContent.innerHTML = pages[pageIndex];
+        }
+        
+        updatePageInfo();
+        updatePageButtons();
+    }
+    
+    function updatePageInfo() {
+        const pageInfo = document.getElementById('pageInfo');
+        if (pageInfo) {
+            pageInfo.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+        }
+    }
+    
+    function updatePageButtons() {
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        
+        if (prevPageBtn) {
+            prevPageBtn.disabled = currentPage <= 1;
+            prevPageBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+        }
+        
+        if (nextPageBtn) {
+            nextPageBtn.disabled = currentPage >= totalPages;
+            nextPageBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
+        }
+    }
+    
+    function goToPage(pageNum) {
+        if (paginationMode !== 'page') return;
+        if (pageNum < 1 || pageNum > totalPages) return;
+        
+        currentPage = pageNum;
+        renderPage();
+    }
+    
+    function prevPage() {
+        if (currentPage > 1) {
+            goToPage(currentPage - 1);
+        } else if (currentChapterIndex > 0) {
+            loadChapter(currentChapterIndex - 1);
+            if (paginationMode === 'page') {
+                currentPage = totalPages;
+                renderPage();
+            }
+        }
+    }
+    
+    function nextPage() {
+        if (currentPage < totalPages) {
+            goToPage(currentPage + 1);
+        } else if (currentChapterIndex < chapters.length - 1) {
+            loadChapter(currentChapterIndex + 1);
+        }
+    }
+    
     function loadFullContent() {
         if (fullContentLoaded && readingMode === 'full') {
             return;
@@ -122,15 +260,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const pageContent = document.getElementById('pageContent');
-                pageContent.innerHTML = formatRawContent(data.content);
+                
+                if (paginationMode === 'page') {
+                    currentChapterContent = data.content;
+                    paginateContent(data.content);
+                    currentPage = 1;
+                    renderPage();
+                } else {
+                    pageContent.innerHTML = formatRawContent(data.content);
+                }
                 
                 document.getElementById('currentChapterTitle').textContent = data.title || '全文阅读';
                 
                 updateReadingModeClass('full');
                 
                 fullContentLoaded = true;
-                pageContent.scrollTop = 0;
-                updateProgress();
+                if (paginationMode === 'scroll') {
+                    pageContent.scrollTop = 0;
+                    updateProgress();
+                }
             })
             .catch(error => {
                 console.error('Error loading raw content:', error);
@@ -179,6 +327,45 @@ document.addEventListener('DOMContentLoaded', function() {
             loadChapter(currentChapterIndex);
             updateReadingModeClass('chapter');
         }
+    }
+    
+    function updatePaginationModeUI() {
+        document.querySelectorAll('.pagination-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === paginationMode);
+        });
+        
+        const paginationControls = document.getElementById('paginationControls');
+        const scrollControls = document.getElementById('scrollControls');
+        
+        if (paginationMode === 'page') {
+            if (paginationControls) paginationControls.style.display = 'flex';
+            if (scrollControls) scrollControls.style.display = 'none';
+            
+            if (currentChapterContent) {
+                paginateContent(currentChapterContent);
+                currentPage = 1;
+                renderPage();
+            }
+        } else {
+            if (paginationControls) paginationControls.style.display = 'none';
+            if (scrollControls) scrollControls.style.display = 'flex';
+            
+            if (currentChapterContent) {
+                const pageContent = document.getElementById('pageContent');
+                pageContent.innerHTML = formatContent(currentChapterContent);
+                updateProgress();
+            }
+        }
+    }
+    
+    function togglePaginationMode(newMode) {
+        if (newMode === paginationMode) {
+            return;
+        }
+        
+        paginationMode = newMode;
+        localStorage.setItem('ereader_paginationMode', paginationMode);
+        updatePaginationModeUI();
     }
     
     function updateChapterButtons() {
@@ -275,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const date = new Date(bookmark.created_at).toLocaleString('zh-CN');
             
             item.innerHTML = `
-                <div class="bookmark-info" data-chapter-id="${bookmark.chapter_id}">
+                <div class="bookmark-info" data-chapter-id="${bookmark.chapter_id}" data-position="${bookmark.position}">
                     <div class="bookmark-chapter">${escapeHtml(bookmark.chapter_title)}</div>
                     ${bookmark.note ? `<div class="bookmark-note">${escapeHtml(bookmark.note)}</div>` : ''}
                     <div class="bookmark-time">${date}</div>
@@ -294,7 +481,16 @@ document.addEventListener('DOMContentLoaded', function() {
             info.addEventListener('click', () => {
                 const chapterIndex = chapters.findIndex(c => c.id === bookmark.chapter_id);
                 if (chapterIndex !== -1) {
-                    loadChapter(chapterIndex);
+                    loadChapter(chapterIndex, false);
+                    
+                    setTimeout(() => {
+                        if (paginationMode === 'scroll' && bookmark.position > 0) {
+                            const pageContent = document.getElementById('pageContent');
+                            pageContent.scrollTop = bookmark.position;
+                            updateProgress();
+                        }
+                    }, 300);
+                    
                     closeAllSidebars();
                 }
             });
@@ -330,6 +526,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateProgress() {
+        if (paginationMode === 'page') return;
+        
         const pageContent = document.getElementById('pageContent');
         const progressSlider = document.getElementById('progressSlider');
         const progressText = document.getElementById('progressText');
@@ -349,6 +547,12 @@ document.addEventListener('DOMContentLoaded', function() {
         pageContent.style.fontSize = fontSize + 'px';
         document.getElementById('fontSizeValue').textContent = fontSize + 'px';
         localStorage.setItem('ereader_fontSize', fontSize);
+        
+        if (paginationMode === 'page' && currentChapterContent) {
+            paginateContent(currentChapterContent);
+            currentPage = 1;
+            renderPage();
+        }
     }
     
     function updateLineHeight() {
@@ -356,6 +560,51 @@ document.addEventListener('DOMContentLoaded', function() {
         pageContent.style.lineHeight = lineHeight;
         document.getElementById('lineHeightValue').textContent = lineHeight.toFixed(1);
         localStorage.setItem('ereader_lineHeight', lineHeight);
+        
+        if (paginationMode === 'page' && currentChapterContent) {
+            paginateContent(currentChapterContent);
+            currentPage = 1;
+            renderPage();
+        }
+    }
+    
+    function updateFontFamily() {
+        const pageContent = document.getElementById('pageContent');
+        
+        if (fontFamily === 'system') {
+            pageContent.style.fontFamily = '';
+        } else {
+            pageContent.style.fontFamily = `"${fontFamily}", system-ui, -apple-system, sans-serif`;
+        }
+        
+        const fontSelect = document.getElementById('fontSelect');
+        if (fontSelect) {
+            fontSelect.value = fontFamily;
+        }
+        
+        localStorage.setItem('ereader_fontFamily', fontFamily);
+        
+        if (paginationMode === 'page' && currentChapterContent) {
+            paginateContent(currentChapterContent);
+            currentPage = 1;
+            renderPage();
+        }
+    }
+    
+    function updateFontColor() {
+        const pageContent = document.getElementById('pageContent');
+        pageContent.style.color = fontColor;
+        
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.color === fontColor);
+        });
+        
+        const customColorPicker = document.getElementById('customColorPicker');
+        if (customColorPicker) {
+            customColorPicker.value = fontColor;
+        }
+        
+        localStorage.setItem('ereader_fontColor', fontColor);
     }
     
     function applyTheme() {
@@ -427,7 +676,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const note = document.getElementById('bookmarkNote').value.trim();
         
         const pageContent = document.getElementById('pageContent');
-        const position = pageContent.scrollTop;
+        let position = pageContent.scrollTop;
+        
+        if (paginationMode === 'page') {
+            position = currentPage;
+        }
         
         fetch('/bookmarks/', {
             method: 'POST',
@@ -589,11 +842,52 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
+        const fontSelect = document.getElementById('fontSelect');
+        if (fontSelect) {
+            fontSelect.addEventListener('change', (e) => {
+                fontFamily = e.target.value;
+                updateFontFamily();
+            });
+        }
+        
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fontColor = btn.dataset.color;
+                updateFontColor();
+            });
+        });
+        
+        const customColorPicker = document.getElementById('customColorPicker');
+        if (customColorPicker) {
+            customColorPicker.addEventListener('input', (e) => {
+                fontColor = e.target.value;
+                updateFontColor();
+            });
+        }
+        
+        document.querySelectorAll('.pagination-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newMode = btn.dataset.mode;
+                togglePaginationMode(newMode);
+            });
+        });
+        
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', prevPage);
+        }
+        
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', nextPage);
+        }
+        
         const pageContent = document.getElementById('pageContent');
         pageContent.addEventListener('scroll', updateProgress);
         
         const progressSlider = document.getElementById('progressSlider');
         progressSlider.addEventListener('input', (e) => {
+            if (paginationMode === 'page') return;
             const value = e.target.value;
             const scrollHeight = pageContent.scrollHeight - pageContent.clientHeight;
             pageContent.scrollTop = (value / 100) * scrollHeight;
@@ -609,7 +903,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-                if (currentChapterIndex > 0) {
+                if (paginationMode === 'page') {
+                    prevPage();
+                } else if (currentChapterIndex > 0) {
                     if (readingMode === 'full') {
                         currentChapterIndex = currentChapterIndex - 1;
                         toggleReadingMode('chapter');
@@ -621,7 +917,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-                if (currentChapterIndex < chapters.length - 1) {
+                if (paginationMode === 'page') {
+                    nextPage();
+                } else if (currentChapterIndex < chapters.length - 1) {
                     if (readingMode === 'full') {
                         currentChapterIndex = currentChapterIndex + 1;
                         toggleReadingMode('chapter');

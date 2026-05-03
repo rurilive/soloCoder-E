@@ -494,6 +494,183 @@ body {
     text-indent: 0;
 }
 
+/* 字体选择下拉框 */
+.font-select {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: 2px solid var(--sidebar-border);
+    border-radius: 8px;
+    background-color: var(--reader-bg);
+    color: var(--reader-text);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+}
+
+.font-select:hover {
+    border-color: var(--primary-color);
+}
+
+.font-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+}
+
+/* 字体颜色选择 */
+.color-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.color-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    border: 2px solid var(--sidebar-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+}
+
+.color-btn.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.3);
+}
+
+.color-btn.active::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.color-dark {
+    background-color: #333333;
+}
+
+.color-black {
+    background-color: #000000;
+}
+
+.color-darkgray {
+    background-color: #555555;
+}
+
+.color-darkblue {
+    background-color: #1a365d;
+}
+
+.color-darkgreen {
+    background-color: #14532d;
+}
+
+.color-darkred {
+    background-color: #742a2a;
+}
+
+.custom-color {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--reader-bg);
+    border-radius: 8px;
+    border: 1px solid var(--sidebar-border);
+}
+
+.custom-color label {
+    margin: 0;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.custom-color input[type="color"] {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--sidebar-border);
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.custom-color input[type="color"]:hover {
+    border-color: var(--primary-color);
+}
+
+/* 翻页模式按钮 */
+.pagination-options {
+    display: flex;
+    gap: 15px;
+}
+
+.pagination-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px 10px;
+    background-color: var(--reader-bg);
+    border: 2px solid var(--sidebar-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.pagination-btn.active {
+    border-color: var(--primary-color);
+    background-color: rgba(74, 111, 165, 0.1);
+}
+
+/* 分页控制按钮 */
+.pagination-controls {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.page-info {
+    font-size: 1rem;
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+    color: var(--reader-text);
+}
+
+/* 滚动控制 */
+.scroll-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
 /* 遮罩层 */
 .overlay {
     position: fixed;

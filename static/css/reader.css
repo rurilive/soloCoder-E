@@ -466,43 +466,32 @@ body {
     color: var(--reader-text);
 }
 
-/* 原文模式章节标题样式 */
-.full-content-chapter {
-    margin-bottom: 2em;
-}
-
-.full-content-chapter-header {
-    margin: 2em 0 1em 0;
-    padding-bottom: 0.5em;
-    border-bottom: 1px solid var(--reader-border);
-}
-
-.full-content-chapter-header.level-0 {
-    font-size: 1.5em;
-    font-weight: 700;
-    text-align: center;
-    padding-bottom: 1em;
-    border-bottom-width: 2px;
-}
-
-.full-content-chapter-header.level-1 {
-    font-size: 1.3em;
-    font-weight: 600;
-}
-
-.full-content-chapter-header.level-2 {
-    font-size: 1.1em;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.full-content-chapter-content {
+/* 原文模式原始文本样式 */
+.raw-content {
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
     line-height: inherit;
+    color: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    text-align: left;
+}
+
+.raw-content p {
+    margin-bottom: 1.2em;
+    text-indent: 0;
 }
 
 /* 原文模式下章节导航隐藏 */
 .reading-mode-full .chapter-nav {
     display: none;
+}
+
+/* 原文模式下不使用段落缩进 */
+.reading-mode-full .page-content p {
+    text-indent: 0;
 }
 
 /* 遮罩层 */

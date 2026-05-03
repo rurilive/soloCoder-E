@@ -114,15 +114,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        fetch(`/books/${bookId}/full-content`)
+        fetch(`/books/${bookId}/raw-content`)
             .then(response => response.json())
             .then(data => {
-                if (!data || !data.chapters || !Array.isArray(data.chapters)) {
+                if (!data || !data.content) {
                     throw new Error('Invalid data format');
                 }
                 
                 const pageContent = document.getElementById('pageContent');
-                pageContent.innerHTML = formatFullContent(data.chapters);
+                pageContent.innerHTML = formatRawContent(data.content);
                 
                 document.getElementById('currentChapterTitle').textContent = data.title || '全文阅读';
                 
@@ -133,33 +133,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProgress();
             })
             .catch(error => {
-                console.error('Error loading full content:', error);
-                showMessage('加载全文失败', 'error');
+                console.error('Error loading raw content:', error);
+                showMessage('加载原文失败', 'error');
             });
     }
     
-    function formatFullContent(chaptersData) {
-        if (!chaptersData || !Array.isArray(chaptersData)) {
-            return '<p>暂无内容</p>';
+    function formatRawContent(content) {
+        if (!content) {
+            return '<pre class="raw-content">暂无内容</pre>';
         }
-        
-        let html = '';
-        chaptersData.forEach((chapter, index) => {
-            const level = chapter.level || 1;
-            const contentHtml = formatContent(chapter.content);
-            
-            html += `
-                <div class="full-content-chapter" data-chapter-id="${chapter.id}" data-chapter-index="${index}">
-                    <h2 class="full-content-chapter-header level-${level}">
-                        ${escapeHtml(chapter.title)}
-                    </h2>
-                    <div class="full-content-chapter-content">
-                        ${contentHtml}
-                    </div>
-                </div>
-            `;
-        });
-        return html;
+        return `<pre class="raw-content">${escapeHtml(content)}</pre>`;
     }
     
     function updateReadingModeUI() {
@@ -228,7 +211,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             item.addEventListener('click', () => {
                 if (readingMode === 'full') {
-                    scrollToChapter(index);
+                    currentChapterIndex = index;
+                    toggleReadingMode('chapter');
+                    setTimeout(() => {
+                        loadChapter(index);
+                    }, 100);
                 } else {
                     loadChapter(index);
                 }
@@ -624,7 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
                 if (currentChapterIndex > 0) {
                     if (readingMode === 'full') {
-                        scrollToChapter(currentChapterIndex - 1);
+                        currentChapterIndex = currentChapterIndex - 1;
+                        toggleReadingMode('chapter');
+                        setTimeout(() => {
+                            loadChapter(currentChapterIndex);
+                        }, 100);
                     } else {
                         loadChapter(currentChapterIndex - 1);
                     }
@@ -632,7 +623,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
                 if (currentChapterIndex < chapters.length - 1) {
                     if (readingMode === 'full') {
-                        scrollToChapter(currentChapterIndex + 1);
+                        currentChapterIndex = currentChapterIndex + 1;
+                        toggleReadingMode('chapter');
+                        setTimeout(() => {
+                            loadChapter(currentChapterIndex);
+                        }, 100);
                     } else {
                         loadChapter(currentChapterIndex + 1);
                     }

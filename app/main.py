@@ -207,28 +207,65 @@ async def get_chapter(chapter_id: int, db: Session = Depends(get_db)):
     })
 
 
-@app.get("/books/{book_id}/full-content")
-async def get_book_full_content(book_id: int, db: Session = Depends(get_db)):
+@app.get("/books/{book_id}/raw-content")
+async def get_book_raw_content(book_id: int, db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     
+    if not os.path.exists(book.file_path):
+        raise HTTPException(status_code=404, detail="Original file not found")
+    
     book.last_read_at = datetime.utcnow()
     db.commit()
     
-    chapters = db.query(Chapter).filter(Chapter.book_id == book_id).order_by(Chapter.order).all()
+    file_type = book.file_type.lower()
     
-    return JSONResponse(content={
-        "book_id": book.id,
-        "title": book.title,
-        "chapters": [{
-            "id": chapter.id,
-            "title": chapter.title,
-            "order": chapter.order,
-            "level": chapter.level,
-            "content": chapter.content
-        } for chapter in chapters]
-    })
+    if file_type == 'txt':
+        try:
+            with open(book.file_path, 'r', encoding='utf-8') as f:
+                raw_content = f.read()
+        except UnicodeDecodeError:
+            with open(book.file_path, 'r', encoding='gbk') as f:
+                raw_content = f.read()
+        
+        return JSONResponse(content={
+            "book_id": book.id,
+            "title": book.title,
+            "file_type": "txt",
+            "content": raw_content
+        })
+    
+    elif file_type == 'epub':
+        from ebooklib import epub
+        from bs4 import BeautifulSoup
+        
+        book_epub = epub.read_epub(book.file_path)
+        raw_content_parts = []
+        
+        for item in book_epub.get_items():
+            if item.get_type() == 9:
+                content = item.get_content().decode('utf-8', errors='ignore')
+                soup = BeautifulSoup(content, 'html.parser')
+                
+                for script in soup(['script', 'style']):
+                    script.decompose()
+                
+                text_content = soup.get_text(separator='\n', strip=False)
+                if text_content.strip():
+                    raw_content_parts.append(text_content)
+        
+        raw_content = '\n\n'.join(raw_content_parts)
+        
+        return JSONResponse(content={
+            "book_id": book.id,
+            "title": book.title,
+            "file_type": "epub",
+            "content": raw_content
+        })
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_type}")
 
 
 @app.post("/bookmarks/")

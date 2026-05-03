@@ -185,12 +185,25 @@ function initUploadArea() {
             return;
         }
 
+        const categorySelect = document.getElementById('categorySelect');
+        const categoryId = categorySelect.value ? parseInt(categorySelect.value) : null;
+
+        if (categoryId === null) {
+            const confirmed = confirm(
+                '您还没有为这本书选择分类。\n\n' +
+                '确定要以"不分类"上传吗？\n\n' +
+                '提示：您可以稍后在书籍卡片上点击编辑按钮修改分类。'
+            );
+            if (!confirmed) {
+                const fileInput = document.getElementById('fileInput');
+                fileInput.value = '';
+                return;
+            }
+        }
+
         uploadProgress.style.display = 'block';
         progressFill.style.width = '0%';
         progressText.textContent = '上传中...';
-
-        const categorySelect = document.getElementById('categorySelect');
-        const categoryId = categorySelect.value ? parseInt(categorySelect.value) : null;
 
         const formData = new FormData();
         formData.append('file', file);

@@ -200,6 +200,36 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePageButtons();
     }
     
+    function estimatePageFromScrollTop(scrollTop) {
+        if (!currentChapterContent) return 1;
+        
+        const pageContent = document.getElementById('pageContent');
+        const containerHeight = pageContent.scrollHeight;
+        const viewportHeight = pageContent.clientHeight;
+        
+        if (containerHeight <= viewportHeight) return 1;
+        
+        const scrollRatio = scrollTop / (containerHeight - viewportHeight);
+        const estimatedPage = Math.ceil(scrollRatio * totalPages);
+        
+        return Math.max(1, Math.min(estimatedPage, totalPages));
+    }
+    
+    function estimateScrollTopFromPage(page) {
+        if (!currentChapterContent) return 0;
+        
+        const pageContent = document.getElementById('pageContent');
+        const containerHeight = pageContent.scrollHeight;
+        const viewportHeight = pageContent.clientHeight;
+        
+        if (containerHeight <= viewportHeight) return 0;
+        
+        const pageRatio = (page - 1) / Math.max(1, totalPages - 1);
+        const estimatedScrollTop = pageRatio * (containerHeight - viewportHeight);
+        
+        return Math.max(0, estimatedScrollTop);
+    }
+    
     function updatePageInfo() {
         const pageInfo = document.getElementById('pageInfo');
         if (pageInfo) {
@@ -487,12 +517,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadChapter(chapterIndex, false);
                     
                     setTimeout(() => {
-                        if (paginationMode === 'scroll' && bookmark.position > 0) {
-                            const pageContent = document.getElementById('pageContent');
-                            pageContent.scrollTop = bookmark.position;
-                            updateProgress();
+                        const savedPosition = bookmark.position;
+                        const pageContent = document.getElementById('pageContent');
+                        
+                        if (savedPosition > 0) {
+                            if (paginationMode === 'scroll') {
+                                pageContent.scrollTop = savedPosition;
+                                updateProgress();
+                            } else {
+                                const estimatedPage = estimatePageFromScrollTop(savedPosition);
+                                if (estimatedPage > 0 && estimatedPage <= totalPages) {
+                                    currentPage = estimatedPage;
+                                    renderPage();
+                                } else {
+                                    showMessage('位置已估算，可能略有偏差', 'info');
+                                    currentPage = 1;
+                                    renderPage();
+                                }
+                            }
+                        } else if (savedPosition < 0) {
+                            const savedPage = Math.abs(savedPosition);
+                            
+                            if (paginationMode === 'page') {
+                                if (savedPage <= totalPages) {
+                                    currentPage = savedPage;
+                                    renderPage();
+                                }
+                            } else {
+                                const estimatedScrollTop = estimateScrollTopFromPage(savedPage);
+                                if (estimatedScrollTop > 0) {
+                                    pageContent.scrollTop = estimatedScrollTop;
+                                    updateProgress();
+                                }
+                            }
                         }
-                    }, 300);
+                    }, 400);
                     
                     closeAllSidebars();
                 }
@@ -679,10 +738,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const note = document.getElementById('bookmarkNote').value.trim();
         
         const pageContent = document.getElementById('pageContent');
-        let position = pageContent.scrollTop;
+        let position;
         
-        if (paginationMode === 'page') {
-            position = currentPage;
+        if (paginationMode === 'scroll') {
+            position = pageContent.scrollTop;
+        } else {
+            position = -currentPage;
         }
         
         fetch('/bookmarks/', {

@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderTOC();
                 
                 if (chapters.length > 0) {
+                    currentChapterIndex = 0;
+                    currentChapterId = chapters[0].id;
+                    
                     if (readingMode === 'full') {
                         loadFullContent();
                     } else {
@@ -779,9 +782,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('closeTocBtn').addEventListener('click', closeAllSidebars);
         
+        document.getElementById('addBookmarkBtn').addEventListener('click', () => {
+            if (currentChapterId) {
+                showBookmarkModal();
+            } else {
+                showMessage('请先打开一个章节', 'error');
+            }
+        });
+        
         document.getElementById('bookmarksBtn').addEventListener('click', () => {
             openSidebar('bookmarksSidebar');
         });
+        
+        const addBookmarkFromSidebarBtn = document.getElementById('addBookmarkFromSidebarBtn');
+        if (addBookmarkFromSidebarBtn) {
+            addBookmarkFromSidebarBtn.addEventListener('click', () => {
+                if (currentChapterId) {
+                    showBookmarkModal();
+                } else {
+                    showMessage('请先打开一个章节', 'error');
+                }
+            });
+        }
         
         document.getElementById('closeBookmarksBtn').addEventListener('click', closeAllSidebars);
         

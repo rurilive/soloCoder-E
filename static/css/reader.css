@@ -243,6 +243,12 @@ body {
     font-size: 1.1rem;
 }
 
+.sidebar-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 .sidebar-content {
     flex: 1;
     overflow-y: auto;

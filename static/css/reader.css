@@ -1,0 +1,579 @@
+:root {
+    --reader-bg: #ffffff;
+    --reader-text: #333333;
+    --reader-border: #e9ecef;
+    --header-bg: #ffffff;
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e9ecef;
+}
+
+.theme-dark {
+    --reader-bg: #1a1a1a;
+    --reader-text: #e0e0e0;
+    --reader-border: #333333;
+    --header-bg: #2d2d2d;
+    --sidebar-bg: #2d2d2d;
+    --sidebar-border: #333333;
+}
+
+.theme-sepia {
+    --reader-bg: #f4ecd8;
+    --reader-text: #5c4b37;
+    --reader-border: #d4c8a8;
+    --header-bg: #e8dfc8;
+    --sidebar-bg: #e8dfc8;
+    --sidebar-border: #d4c8a8;
+}
+
+body {
+    background-color: var(--reader-bg);
+    color: var(--reader-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.reader-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.reader-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--reader-border);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    z-index: 100;
+}
+
+.reader-header.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.book-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.reader-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+.chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--reader-border);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.chapter-nav.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    border: none;
+}
+
+.chapter-info {
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+    flex: 1;
+}
+
+.content-area {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    padding: 20px 0;
+}
+
+.page-container {
+    width: 100%;
+    max-width: 800px;
+    overflow: hidden;
+    position: relative;
+}
+
+.page-content {
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+    text-align: justify;
+    scroll-behavior: smooth;
+}
+
+.page-content p {
+    margin-bottom: 1.2em;
+    text-indent: 2em;
+}
+
+.page-content h1,
+.page-content h2,
+.page-content h3,
+.page-content h4,
+.page-content h5,
+.page-content h6 {
+    text-indent: 0;
+    margin: 1.5em 0 0.8em 0;
+    font-weight: 600;
+}
+
+.reading-progress {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-top: 1px solid var(--reader-border);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.reading-progress.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    border: none;
+}
+
+#progressSlider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--reader-border);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+#progressSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#progressSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+#progressSlider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background-color: var(--sidebar-bg);
+    border-left: 1px solid var(--sidebar-border);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar.open {
+    right: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.toc-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.toc-item:hover {
+    background-color: rgba(74, 111, 165, 0.1);
+}
+
+.toc-item.active {
+    background-color: rgba(74, 111, 165, 0.15);
+    border-left: 3px solid var(--primary-color);
+}
+
+.toc-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.toc-order {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.bookmark-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.bookmark-info {
+    flex: 1;
+    cursor: pointer;
+}
+
+.bookmark-chapter {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.bookmark-note {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.bookmark-time {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.bookmark-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* 设置面板 */
+.settings-panel {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background-color: var(--sidebar-bg);
+    border-left: 1px solid var(--sidebar-border);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-panel.open {
+    right: 0;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.settings-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.settings-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.setting-item {
+    margin-bottom: 30px;
+}
+
+.setting-item label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 12px;
+    font-size: 1rem;
+}
+
+.font-size-controls,
+.line-height-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.font-size-controls span,
+.line-height-controls span {
+    font-size: 1rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.theme-options {
+    display: flex;
+    gap: 15px;
+}
+
+.theme-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    border: 2px solid var(--sidebar-border);
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.theme-btn:hover {
+    transform: scale(1.05);
+}
+
+.theme-btn.active {
+    border-color: var(--primary-color);
+}
+
+.theme-light {
+    background-color: #ffffff;
+}
+
+.theme-dark {
+    background-color: #1a1a1a;
+}
+
+.theme-sepia {
+    background-color: #f4ecd8;
+}
+
+/* 遮罩层 */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 150;
+}
+
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 模态框 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 300;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background-color: var(--sidebar-bg);
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 6px;
+    font-size: 1rem;
+    resize: vertical;
+    background-color: var(--reader-bg);
+    color: var(--reader-text);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+/* 翻页动画 */
+.page-container {
+    perspective: 1500px;
+}
+
+.page-content {
+    transition: transform 0.5s ease, opacity 0.5s ease;
+    transform-style: preserve-3d;
+}
+
+.page-content.page-turn-left {
+    transform: rotateY(-180deg);
+    opacity: 0;
+}
+
+.page-content.page-turn-right {
+    transform: rotateY(180deg);
+    opacity: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .reader-header {
+        padding: 10px 15px;
+    }
+    
+    .book-title {
+        max-width: 200px;
+        font-size: 1rem;
+    }
+    
+    .chapter-nav {
+        padding: 10px 0;
+    }
+    
+    .sidebar,
+    .settings-panel {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .sidebar.open,
+    .settings-panel.open {
+        right: 0;
+    }
+    
+    .page-content {
+        padding: 15px;
+        font-size: 15px;
+    }
+    
+    .reader-content {
+        padding: 0 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .book-title {
+        display: none;
+    }
+    
+    .chapter-info {
+        font-size: 0.9rem;
+    }
+    
+    .btn-text {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+    }
+}

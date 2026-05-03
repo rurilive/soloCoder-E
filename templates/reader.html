@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.title }} - 电子阅读器</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/reader.css">
+</head>
+<body>
+    <div class="reader-container">
+        <header class="reader-header" id="readerHeader">
+            <div class="header-left">
+                <button class="btn btn-icon" id="backBtn" title="返回书架">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h1 class="book-title">{{ book.title }}</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-icon" id="tocBtn" title="目录">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="btn btn-icon" id="bookmarksBtn" title="书签">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+                <button class="btn btn-icon" id="settingsBtn" title="设置">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+        
+        <main class="reader-content">
+            <div class="chapter-nav" id="chapterNav">
+                <button class="btn btn-text" id="prevChapterBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    上一章
+                </button>
+                <span class="chapter-info" id="chapterInfo">
+                    <span id="currentChapterTitle">正在加载...</span>
+                </span>
+                <button class="btn btn-text" id="nextChapterBtn">
+                    下一章
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="content-area" id="contentArea">
+                <div class="page-container" id="pageContainer">
+                    <div class="page-content" id="pageContent">
+                        <!-- 章节内容将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reading-progress" id="readingProgress">
+                <input type="range" id="progressSlider" min="0" max="100" value="0">
+                <span class="progress-text" id="progressText">0%</span>
+            </div>
+        </main>
+        
+        <!-- 侧边栏 - 目录 -->
+        <aside class="sidebar" id="tocSidebar">
+            <div class="sidebar-header">
+                <h3>目录</h3>
+                <button class="btn btn-icon" id="closeTocBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="sidebar-content" id="tocContent">
+                <!-- 目录将通过JavaScript动态加载 -->
+            </div>
+        </aside>
+        
+        <!-- 侧边栏 - 书签 -->
+        <aside class="sidebar" id="bookmarksSidebar">
+            <div class="sidebar-header">
+                <h3>书签</h3>
+                <button class="btn btn-icon" id="closeBookmarksBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="sidebar-content" id="bookmarksContent">
+                <!-- 书签将通过JavaScript动态加载 -->
+            </div>
+        </aside>
+        
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3>阅读设置</h3>
+                <button class="btn btn-icon" id="closeSettingsBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <label>字体大小</label>
+                    <div class="font-size-controls">
+                        <button class="btn btn-icon" id="decreaseFontBtn">A-</button>
+                        <span id="fontSizeValue">16px</span>
+                        <button class="btn btn-icon" id="increaseFontBtn">A+</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>行间距</label>
+                    <div class="line-height-controls">
+                        <button class="btn btn-icon" id="decreaseLineHeightBtn">-</button>
+                        <span id="lineHeightValue">1.5</span>
+                        <button class="btn btn-icon" id="increaseLineHeightBtn">+</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>主题</label>
+                    <div class="theme-options">
+                        <button class="theme-btn theme-light" data-theme="light" title="浅色主题"></button>
+                        <button class="theme-btn theme-dark" data-theme="dark" title="深色主题"></button>
+                        <button class="theme-btn theme-sepia" data-theme="sepia" title="护眼主题"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 遮罩层 -->
+        <div class="overlay" id="overlay"></div>
+        
+        <!-- 添加书签对话框 -->
+        <div class="modal" id="bookmarkModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加书签</h3>
+                    <button class="btn btn-icon" id="closeBookmarkModalBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="bookmarkNote">备注（可选）</label>
+                        <textarea id="bookmarkNote" rows="3" placeholder="添加书签备注..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelBookmarkBtn">取消</button>
+                    <button class="btn btn-primary" id="saveBookmarkBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        window.bookId = {{ book.id }};
+    </script>
+    <script src="/static/js/reader.js"></script>
+</body>
+</html>

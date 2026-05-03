@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电子阅读器</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📚 电子阅读器</h1>
+        </header>
+        
+        <main class="main-content">
+            <section class="upload-section">
+                <h2>上传电子书</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p>拖拽文件到此处，或点击选择文件</p>
+                    <p class="upload-hint">支持 .epub 和 .txt 格式</p>
+                    <input type="file" id="fileInput" accept=".epub,.txt" style="display: none;">
+                </div>
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">上传中...</p>
+                </div>
+            </section>
+            
+            <section class="books-section">
+                <h2>我的书架</h2>
+                <div class="books-grid" id="booksGrid">
+                    <!-- 书籍列表将通过JavaScript动态加载 -->
+                </div>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <p>书架空空如也，快来上传第一本书吧！</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

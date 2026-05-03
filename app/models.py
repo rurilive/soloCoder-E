@@ -26,6 +26,7 @@ class Chapter(Base):
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
     title = Column(String(255), nullable=False)
     order = Column(Integer, nullable=False)
+    level = Column(Integer, default=1)
     content = Column(Text, nullable=False)
 
     book = relationship("Book", back_populates="chapters")

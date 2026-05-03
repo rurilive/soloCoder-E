@@ -76,12 +76,13 @@ async def upload_book(file: UploadFile = File(...), db: Session = Depends(get_db
     db.commit()
     db.refresh(db_book)
     
-    for order, (chapter_title, chapter_content) in enumerate(chapters):
+    for order, chapter_data in enumerate(chapters):
         db_chapter = Chapter(
             book_id=db_book.id,
-            title=chapter_title,
+            title=chapter_data['title'],
             order=order,
-            content=chapter_content
+            level=chapter_data.get('level', 1),
+            content=chapter_data['content']
         )
         db.add(db_chapter)
     
@@ -127,7 +128,8 @@ async def get_book(book_id: int, db: Session = Depends(get_db)):
         "chapters": [{
             "id": chapter.id,
             "title": chapter.title,
-            "order": chapter.order
+            "order": chapter.order,
+            "level": chapter.level
         } for chapter in chapters]
     })
 

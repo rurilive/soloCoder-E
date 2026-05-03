@@ -114,8 +114,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         chapters.forEach((chapter, index) => {
             const item = document.createElement('div');
-            item.className = 'toc-item';
+            const level = chapter.level || 0;
+            const indentClass = `toc-level-${level}`;
+            
+            item.className = `toc-item ${indentClass}`;
             item.dataset.index = index;
+            item.dataset.level = level;
             item.innerHTML = `
                 <div class="toc-title">${escapeHtml(chapter.title)}</div>
                 <div class="toc-order">第 ${index + 1} 章</div>

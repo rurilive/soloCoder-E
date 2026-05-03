@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}查看密码 - {{ entry.title }}{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <div class="detail-title-section">
+                <span class="detail-icon">
+                    {% if entry.category == '社交账号' %}👥
+                    {% elif entry.category == '工作账号' %}💼
+                    {% elif entry.category == '金融账号' %}💰
+                    {% elif entry.category == '邮箱账号' %}📧
+                    {% elif entry.category == '购物账号' %}🛒
+                    {% elif entry.category == '游戏账号' %}🎮
+                    {% else %}📋
+                    {% endif %}
+                </span>
+                <div>
+                    <h2 class="detail-title">{{ entry.title }}</h2>
+                    <span class="detail-category">{{ entry.category }}</span>
+                </div>
+            </div>
+            <div class="detail-actions">
+                <a href="/edit/{{ entry.id }}" class="btn btn-secondary">
+                    ✏️ 编辑
+                </a>
+                <a href="/dashboard" class="btn btn-outline">
+                    返回列表
+                </a>
+            </div>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-item">
+                <span class="detail-label">用户名/账号</span>
+                <div class="detail-value-row">
+                    <span class="detail-value" id="username-display">{{ entry.username or '-' }}</span>
+                    {% if entry.username %}
+                    <button class="btn btn-sm btn-secondary copy-btn" data-copy="{{ entry.username }}">
+                        📋 复制
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">密码</span>
+                <div class="detail-value-row">
+                    <span class="detail-value password-masked" id="password-display">••••••••</span>
+                    <span class="detail-value hidden" id="password-actual">{{ entry.password }}</span>
+                    <button class="btn btn-sm btn-outline" id="togglePassword">
+                        👁️ 显示
+                    </button>
+                    <button class="btn btn-sm btn-secondary copy-btn" data-copy="{{ entry.password }}">
+                        🔑 复制密码
+                    </button>
+                </div>
+            </div>
+            
+            {% if entry.url %}
+            <div class="detail-item">
+                <span class="detail-label">网址</span>
+                <div class="detail-value-row">
+                    <a href="{{ entry.url }}" target="_blank" class="detail-link">{{ entry.url }}</a>
+                    <button class="btn btn-sm btn-secondary copy-btn" data-copy="{{ entry.url }}">
+                        🔗 复制
+                    </button>
+                    <a href="{{ entry.url }}" target="_blank" class="btn btn-sm btn-primary">
+                        打开网站
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if entry.notes %}
+            <div class="detail-item">
+                <span class="detail-label">备注</span>
+                <div class="detail-notes">
+                    {{ entry.notes }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="detail-footer">
+            <div class="time-info">
+                <span class="time-item">
+                    <span class="time-label">创建时间:</span>
+                    <span class="time-value">{{ entry.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </span>
+                <span class="time-item">
+                    <span class="time-label">更新时间:</span>
+                    <span class="time-value">{{ entry.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </span>
+            </div>
+            
+            <div class="danger-zone">
+                <a href="/delete/{{ entry.id }}" class="btn btn-danger">
+                    🗑️ 删除此密码
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('togglePassword');
+    const passwordMasked = document.getElementById('password-display');
+    const passwordActual = document.getElementById('password-actual');
+    let isVisible = false;
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                passwordMasked.classList.add('hidden');
+                passwordActual.classList.remove('hidden');
+                toggleBtn.textContent = '🙈 隐藏';
+            } else {
+                passwordMasked.classList.remove('hidden');
+                passwordActual.classList.add('hidden');
+                toggleBtn.textContent = '👁️ 显示';
+            }
+        });
+    }
+    
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const textToCopy = this.getAttribute('data-copy');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = this.textContent;
+                this.textContent = '✅ 已复制!';
+                this.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.remove('btn-success');
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败，请手动复制');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

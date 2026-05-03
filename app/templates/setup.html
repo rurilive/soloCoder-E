@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}设置主密码 - 密码本管理器{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon">🔐</div>
+            <h2>欢迎使用密码本管理器</h2>
+            <p class="auth-subtitle">请设置一个安全的主密码来保护您的所有密码</p>
+        </div>
+        
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="/setup" class="auth-form">
+            <div class="form-group">
+                <label for="password" class="form-label">主密码</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="form-input"
+                    placeholder="请输入主密码（至少6位）"
+                    required
+                    autofocus
+                >
+                <div class="form-hint">主密码是访问您所有密码的唯一钥匙，请务必牢记</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">确认主密码</label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password" 
+                    class="form-input"
+                    placeholder="请再次输入主密码"
+                    required
+                >
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                设置主密码并开始使用
+            </button>
+        </form>
+        
+        <div class="security-notice">
+            <h4>🔒 安全提示</h4>
+            <ul>
+                <li>主密码不会被存储，而是通过加密算法生成密钥</li>
+                <li>所有密码数据都将被加密存储</li>
+                <li>如果忘记主密码，将无法恢复数据</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

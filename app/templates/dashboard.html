@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 密码本管理器{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div class="stats-card">
+            <div class="stat-item">
+                <span class="stat-value">{{ total_count }}</span>
+                <span class="stat-label">总密码数</span>
+            </div>
+        </div>
+        
+        <div class="search-section">
+            <form method="GET" action="/dashboard" class="search-form">
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="search-input"
+                    placeholder="搜索密码（标题、用户名、备注）..."
+                    value="{{ search_query or '' }}"
+                >
+                <button type="submit" class="btn btn-secondary">搜索</button>
+                {% if search_query %}
+                <a href="/dashboard" class="btn btn-outline">清除搜索</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="sidebar-main-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>分类</h3>
+                <ul class="category-list">
+                    <li class="category-item {% if not current_category and not search_query %}active{% endif %}">
+                        <a href="/dashboard">
+                            <span class="category-icon">📁</span>
+                            <span class="category-name">全部</span>
+                            <span class="category-count">{{ total_count }}</span>
+                        </a>
+                    </li>
+                    {% for category in PasswordCategory %}
+                    <li class="category-item {% if current_category == category.value %}active{% endif %}">
+                        <a href="/dashboard?category={{ category.value }}">
+                            <span class="category-icon">
+                                {% if category == PasswordCategory.SOCIAL %}👥
+                                {% elif category == PasswordCategory.WORK %}💼
+                                {% elif category == PasswordCategory.FINANCIAL %}💰
+                                {% elif category == PasswordCategory.EMAIL %}📧
+                                {% elif category == PasswordCategory.SHOPPING %}🛒
+                                {% elif category == PasswordCategory.GAMING %}🎮
+                                {% else %}📋
+                                {% endif %}
+                            </span>
+                            <span class="category-name">{{ category.value }}</span>
+                            <span class="category-count">{{ categories_count.get(category.value, 0) }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <a href="/add" class="btn btn-primary btn-block">
+                    ➕ 添加新密码
+                </a>
+            </div>
+        </aside>
+        
+        <main class="main-section">
+            {% if search_query %}
+            <div class="section-header">
+                <h2>搜索结果: "{{ search_query }}"</h2>
+                <span class="result-count">找到 {{ entries|length }} 个结果</span>
+            </div>
+            {% elif current_category %}
+            <div class="section-header">
+                <h2>{{ current_category }}</h2>
+                <span class="result-count">{{ entries|length }} 个密码</span>
+            </div>
+            {% else %}
+            <div class="section-header">
+                <h2>所有密码</h2>
+                <span class="result-count">共 {{ entries|length }} 个密码</span>
+            </div>
+            {% endif %}
+            
+            {% if entries %}
+            <div class="password-list">
+                {% for entry in entries %}
+                <div class="password-card">
+                    <div class="password-card-header">
+                        <div class="password-title-section">
+                            <span class="password-icon">
+                                {% if entry.category == PasswordCategory.SOCIAL.value or entry.category == PasswordCategory.SOCIAL %}👥
+                                {% elif entry.category == PasswordCategory.WORK.value or entry.category == PasswordCategory.WORK %}💼
+                                {% elif entry.category == PasswordCategory.FINANCIAL.value or entry.category == PasswordCategory.FINANCIAL %}💰
+                                {% elif entry.category == PasswordCategory.EMAIL.value or entry.category == PasswordCategory.EMAIL %}📧
+                                {% elif entry.category == PasswordCategory.SHOPPING.value or entry.category == PasswordCategory.SHOPPING %}🛒
+                                {% elif entry.category == PasswordCategory.GAMING.value or entry.category == PasswordCategory.GAMING %}🎮
+                                {% else %}📋
+                                {% endif %}
+                            </span>
+                            <div>
+                                <h3 class="password-title">{{ entry.title }}</h3>
+                                <span class="password-category-badge">{{ entry.category }}</span>
+                            </div>
+                        </div>
+                        <div class="password-actions">
+                            <a href="/view/{{ entry.id }}" class="action-btn" title="查看详情">👁️</a>
+                            <a href="/edit/{{ entry.id }}" class="action-btn" title="编辑">✏️</a>
+                            <a href="/delete/{{ entry.id }}" class="action-btn action-btn-danger" title="删除">🗑️</a>
+                        </div>
+                    </div>
+                    
+                    <div class="password-card-body">
+                        <div class="password-info-row">
+                            <span class="info-label">用户名:</span>
+                            <span class="info-value">{{ entry.username or '-' }}</span>
+                        </div>
+                        {% if entry.url %}
+                        <div class="password-info-row">
+                            <span class="info-label">网址:</span>
+                            <a href="{{ entry.url }}" target="_blank" class="info-link">{{ entry.url }}</a>
+                        </div>
+                        {% endif %}
+                        {% if entry.notes %}
+                        <div class="password-info-row password-notes">
+                            <span class="info-label">备注:</span>
+                            <span class="info-value">{{ entry.notes[:50] }}{% if entry.notes|length > 50 %}...{% endif %}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="password-card-footer">
+                        <span class="update-time">
+                            更新于: {{ entry.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                        </span>
+                        <button 
+                            class="btn btn-sm btn-secondary copy-btn" 
+                            data-password="{{ entry.password }}"
+                            title="复制密码"
+                        >
+                            🔑 复制密码
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h3>暂无密码</h3>
+                {% if search_query %}
+                <p>没有找到匹配的密码，请尝试其他搜索关键词</p>
+                {% elif current_category %}
+                <p>该分类下暂无密码</p>
+                <a href="/add" class="btn btn-primary">添加第一个密码</a>
+                {% else %}
+                <p>开始添加您的第一个密码吧</p>
+                <a href="/add" class="btn btn-primary">添加第一个密码</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const password = this.getAttribute('data-password');
+            navigator.clipboard.writeText(password).then(() => {
+                const originalText = this.textContent;
+                this.textContent = '✅ 已复制!';
+                this.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.remove('btn-success');
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败，请手动复制');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

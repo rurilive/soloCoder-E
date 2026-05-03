@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}确认删除 - 密码本管理器{% endblock %}
+
+{% block content %}
+<div class="confirm-container">
+    <div class="confirm-card">
+        <div class="confirm-icon">⚠️</div>
+        
+        <h2 class="confirm-title">确认删除</h2>
+        
+        <p class="confirm-message">
+            您确定要删除密码 "<strong>{{ entry.title }}</strong>" 吗？
+        </p>
+        
+        <div class="confirm-details">
+            <div class="detail-row">
+                <span class="detail-label">标题:</span>
+                <span class="detail-value">{{ entry.title }}</span>
+            </div>
+            {% if entry.username %}
+            <div class="detail-row">
+                <span class="detail-label">用户名:</span>
+                <span class="detail-value">{{ entry.username }}</span>
+            </div>
+            {% endif %}
+            <div class="detail-row">
+                <span class="detail-label">分类:</span>
+                <span class="detail-value">{{ entry.category }}</span>
+            </div>
+            {% if entry.url %}
+            <div class="detail-row">
+                <span class="detail-label">网址:</span>
+                <span class="detail-value">{{ entry.url }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="confirm-warning">
+            <p>此操作无法撤销，删除后将永久丢失此密码信息。</p>
+        </div>
+        
+        <form method="POST" action="/delete/{{ entry.id }}" class="confirm-form">
+            <div class="confirm-actions">
+                <a href="/view/{{ entry.id }}" class="btn btn-outline btn-lg">取消</a>
+                <button type="submit" class="btn btn-danger btn-lg">
+                    🗑️ 确认删除
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

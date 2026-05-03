@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let fontSize = 16;
     let lineHeight = 1.8;
     let currentTheme = 'light';
+    let readingMode = 'chapter';
+    let fullContentLoaded = false;
     
     const state = {
         chapterIndex: 0,
@@ -21,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const savedFontSize = localStorage.getItem('ereader_fontSize');
         const savedLineHeight = localStorage.getItem('ereader_lineHeight');
         const savedTheme = localStorage.getItem('ereader_theme');
+        const savedReadingMode = localStorage.getItem('ereader_readingMode');
         
         if (savedFontSize) {
             fontSize = parseInt(savedFontSize);
@@ -36,6 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
             currentTheme = savedTheme;
             applyTheme();
         }
+        
+        if (savedReadingMode) {
+            readingMode = savedReadingMode;
+            updateReadingModeUI();
+        }
     }
     
     function loadBook() {
@@ -46,7 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderTOC();
                 
                 if (chapters.length > 0) {
-                    loadChapter(0);
+                    if (readingMode === 'full') {
+                        loadFullContent();
+                    } else {
+                        loadChapter(0);
+                    }
                 }
             })
             .catch(error => {
@@ -97,6 +109,95 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
     
+    function loadFullContent() {
+        if (fullContentLoaded && readingMode === 'full') {
+            return;
+        }
+        
+        fetch(`/books/${bookId}/full-content`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data || !data.chapters || !Array.isArray(data.chapters)) {
+                    throw new Error('Invalid data format');
+                }
+                
+                const pageContent = document.getElementById('pageContent');
+                pageContent.innerHTML = formatFullContent(data.chapters);
+                
+                document.getElementById('currentChapterTitle').textContent = data.title || '全文阅读';
+                
+                updateReadingModeClass('full');
+                
+                fullContentLoaded = true;
+                pageContent.scrollTop = 0;
+                updateProgress();
+            })
+            .catch(error => {
+                console.error('Error loading full content:', error);
+                showMessage('加载全文失败', 'error');
+            });
+    }
+    
+    function formatFullContent(chaptersData) {
+        if (!chaptersData || !Array.isArray(chaptersData)) {
+            return '<p>暂无内容</p>';
+        }
+        
+        let html = '';
+        chaptersData.forEach((chapter, index) => {
+            const level = chapter.level || 1;
+            const contentHtml = formatContent(chapter.content);
+            
+            html += `
+                <div class="full-content-chapter" data-chapter-id="${chapter.id}" data-chapter-index="${index}">
+                    <h2 class="full-content-chapter-header level-${level}">
+                        ${escapeHtml(chapter.title)}
+                    </h2>
+                    <div class="full-content-chapter-content">
+                        ${contentHtml}
+                    </div>
+                </div>
+            `;
+        });
+        return html;
+    }
+    
+    function updateReadingModeUI() {
+        document.querySelectorAll('.reading-mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === readingMode);
+        });
+        
+        if (readingMode === 'full') {
+            updateReadingModeClass('full');
+        } else {
+            updateReadingModeClass('chapter');
+        }
+    }
+    
+    function updateReadingModeClass(mode) {
+        const body = document.body;
+        body.classList.remove('reading-mode-full', 'reading-mode-chapter');
+        body.classList.add(`reading-mode-${mode}`);
+    }
+    
+    function toggleReadingMode(newMode) {
+        if (newMode === readingMode) {
+            return;
+        }
+        
+        readingMode = newMode;
+        localStorage.setItem('ereader_readingMode', readingMode);
+        updateReadingModeUI();
+        closeAllSidebars();
+        
+        if (newMode === 'full') {
+            loadFullContent();
+        } else {
+            loadChapter(currentChapterIndex);
+            updateReadingModeClass('chapter');
+        }
+    }
+    
     function updateChapterButtons() {
         const prevBtn = document.getElementById('prevChapterBtn');
         const nextBtn = document.getElementById('nextChapterBtn');
@@ -126,12 +227,30 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             item.addEventListener('click', () => {
-                loadChapter(index);
+                if (readingMode === 'full') {
+                    scrollToChapter(index);
+                } else {
+                    loadChapter(index);
+                }
                 closeAllSidebars();
             });
             
             tocContent.appendChild(item);
         });
+    }
+    
+    function scrollToChapter(index) {
+        const chapterElement = document.querySelector(`.full-content-chapter[data-chapter-index="${index}"]`);
+        if (chapterElement) {
+            const pageContent = document.getElementById('pageContent');
+            const offsetTop = chapterElement.offsetTop - 20;
+            pageContent.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth'
+            });
+            currentChapterIndex = index;
+            highlightCurrentTOC();
+        }
     }
     
     function highlightCurrentTOC() {
@@ -476,6 +595,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
+        document.querySelectorAll('.reading-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newMode = btn.dataset.mode;
+                toggleReadingMode(newMode);
+            });
+        });
+        
         const pageContent = document.getElementById('pageContent');
         pageContent.addEventListener('scroll', updateProgress);
         
@@ -497,11 +623,19 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
                 if (currentChapterIndex > 0) {
-                    loadChapter(currentChapterIndex - 1);
+                    if (readingMode === 'full') {
+                        scrollToChapter(currentChapterIndex - 1);
+                    } else {
+                        loadChapter(currentChapterIndex - 1);
+                    }
                 }
             } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
                 if (currentChapterIndex < chapters.length - 1) {
-                    loadChapter(currentChapterIndex + 1);
+                    if (readingMode === 'full') {
+                        scrollToChapter(currentChapterIndex + 1);
+                    } else {
+                        loadChapter(currentChapterIndex + 1);
+                    }
                 }
             } else if (e.key === 'b' || e.key === 'B') {
                 if (!e.ctrlKey && !e.metaKey) {

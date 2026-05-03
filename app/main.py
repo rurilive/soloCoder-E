@@ -202,7 +202,32 @@ async def get_chapter(chapter_id: int, db: Session = Depends(get_db)):
         "book_id": chapter.book_id,
         "title": chapter.title,
         "order": chapter.order,
+        "level": chapter.level,
         "content": chapter.content
+    })
+
+
+@app.get("/books/{book_id}/full-content")
+async def get_book_full_content(book_id: int, db: Session = Depends(get_db)):
+    book = db.query(Book).filter(Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    book.last_read_at = datetime.utcnow()
+    db.commit()
+    
+    chapters = db.query(Chapter).filter(Chapter.book_id == book_id).order_by(Chapter.order).all()
+    
+    return JSONResponse(content={
+        "book_id": book.id,
+        "title": book.title,
+        "chapters": [{
+            "id": chapter.id,
+            "title": chapter.title,
+            "order": chapter.order,
+            "level": chapter.level,
+            "content": chapter.content
+        } for chapter in chapters]
     })
 
 

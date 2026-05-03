@@ -24,18 +24,82 @@ if [ -f "$PID_FILE" ]; then
     fi
 fi
 
-# 检查虚拟环境
-if [ -d ".venv" ]; then
-    echo "🔍 检测到虚拟环境，正在激活..."
-    source ".venv/bin/activate"
-fi
+# 检测可用的Python运行方式
+detect_python_runner() {
+    # 1. 优先检查 uv
+    if command -v uv &> /dev/null; then
+        if [ -f "$PROJECT_DIR/pyproject.toml" ]; then
+            echo "🔍 检测到 uv，将使用 uv run 执行"
+            echo "uv"
+            return
+        fi
+    fi
+    
+    # 2. 检查项目内的虚拟环境
+    if [ -d "$PROJECT_DIR/.venv" ]; then
+        echo "🔍 检测到项目虚拟环境 (.venv)"
+        echo "venv"
+        return
+    fi
+    
+    # 3. 检查系统python
+    if command -v python3 &> /dev/null; then
+        echo "🔍 使用系统 Python3"
+        echo "python3"
+        return
+    elif command -v python &> /dev/null; then
+        echo "🔍 使用系统 Python"
+        echo "python"
+        return
+    fi
+    
+    echo "❌ 未找到可用的 Python 环境"
+    echo "   请安装 Python 或使用 uv/pip 安装依赖"
+    exit 1
+}
+
+RUNNER=$(detect_python_runner)
+echo "✅ 运行方式: $RUNNER"
+
+# 安装依赖的函数
+install_deps() {
+    echo "📦 检查/安装依赖..."
+    case "$RUNNER" in
+        "uv")
+            uv sync
+            ;;
+        "venv")
+            source "$PROJECT_DIR/.venv/bin/activate"
+            pip install -e .
+            ;;
+        *)
+            $RUNNER -m pip install --user -e . 2>/dev/null || $RUNNER -m pip install -e .
+            ;;
+    esac
+}
+
+# 执行Python命令的函数
+run_python() {
+    case "$RUNNER" in
+        "uv")
+            uv run python "$@"
+            ;;
+        "venv")
+            source "$PROJECT_DIR/.venv/bin/activate"
+            python "$@"
+            ;;
+        *)
+            $RUNNER "$@"
+            ;;
+    esac
+}
 
 # 检查依赖
 echo "📦 检查依赖..."
-python -c "import fastapi, uvicorn, jinja2, ebooklib, bs4, sqlalchemy" 2>/dev/null
+run_python -c "import fastapi, uvicorn, jinja2, ebooklib, bs4, sqlalchemy" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "⚠️  缺少依赖，正在安装..."
-    pip install -e .
+    install_deps
 fi
 
 # 创建必要的目录
@@ -48,7 +112,19 @@ echo "📝 日志文件: $LOG_FILE"
 echo "📊 PID 文件: $PID_FILE"
 
 # 后台启动服务
-nohup python run.py --host "$HOST" --port "$PORT" > "$LOG_FILE" 2>&1 &
+case "$RUNNER" in
+    "uv")
+        nohup uv run python run.py --host "$HOST" --port "$PORT" > "$LOG_FILE" 2>&1 &
+        ;;
+    "venv")
+        source "$PROJECT_DIR/.venv/bin/activate"
+        nohup python run.py --host "$HOST" --port "$PORT" > "$LOG_FILE" 2>&1 &
+        ;;
+    *)
+        nohup $RUNNER run.py --host "$HOST" --port "$PORT" > "$LOG_FILE" 2>&1 &
+        ;;
+esac
+
 echo $! > "$PID_FILE"
 
 # 等待服务启动

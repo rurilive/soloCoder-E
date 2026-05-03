@@ -10,23 +10,49 @@ cd "$PROJECT_DIR"
 
 # 检查PID文件
 if [ ! -f "$PID_FILE" ]; then
-    echo "⚠️  未找到PID文件，服务可能未运行"
+    echo "⚠️  未找到PID文件，尝试通过进程名查找..."
     
-    # 尝试通过进程名查找
-    PID=$(pgrep -f "python.*run.py" 2>/dev/null)
-    if [ -n "$PID" ]; then
-        echo "🔍 发现相关进程 (PID: $PID)"
+    # 尝试通过多种方式查找进程
+    PIDS=""
+    
+    # 1. 查找 uv run python run.py 进程
+    PIDS=$(pgrep -f "uv.*run.*python.*run.py" 2>/dev/null)
+    
+    # 2. 查找 python run.py 进程
+    if [ -z "$PIDS" ]; then
+        PIDS=$(pgrep -f "python.*run.py" 2>/dev/null)
+    fi
+    
+    # 3. 查找 uvicorn app.main:app 进程
+    if [ -z "$PIDS" ]; then
+        PIDS=$(pgrep -f "uvicorn.*app.main" 2>/dev/null)
+    fi
+    
+    if [ -n "$PIDS" ]; then
+        echo "🔍 发现相关进程: $PIDS"
         read -p "是否停止这些进程? (y/n): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            kill "$PID" 2>/dev/null
-            if [ $? -eq 0 ]; then
-                echo "✅ 进程已停止"
-            else
-                echo "❌ 停止进程失败"
-                exit 1
+            kill $PIDS 2>/dev/null
+            sleep 1
+            
+            # 检查是否还有进程在运行
+            REMAINING=""
+            for pid in $PIDS; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    REMAINING="$REMAINING $pid"
+                fi
+            done
+            
+            if [ -n "$REMAINING" ]; then
+                echo "⚠️  部分进程未响应，强制停止..."
+                kill -9 $REMAINING 2>/dev/null
             fi
+            
+            echo "✅ 进程已停止"
         fi
+    else
+        echo "ℹ️  服务未运行"
     fi
     exit 0
 fi
@@ -53,11 +79,11 @@ echo "🛑 正在停止电子阅读器 (PID: $PID)..."
 kill -SIGTERM "$PID" 2>/dev/null
 
 # 等待进程停止
-for i in {1..10}; do
+for i in {1..15}; do
     if ! kill -0 "$PID" 2>/dev/null; then
         break
     fi
-    echo "⏳ 等待进程停止... ($i/10)"
+    echo "⏳ 等待进程停止... ($i/15)"
     sleep 1
 done
 

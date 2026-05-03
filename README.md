@@ -80,33 +80,57 @@ soloCoder-E/
 
 ### 环境要求
 - Python 3.8 或更高版本
-- pip 包管理器
+- **推荐**: 使用 [uv](https://github.com/astral-sh/uv) 包管理器（超快！）
+- 或 pip 包管理器
 
 ### 安装步骤
 
-1. **克隆或进入项目目录**
-   ```bash
-   cd /path/to/soloCoder-E
-   ```
+#### 方式一：使用 uv（推荐）
 
-2. **（推荐）创建虚拟环境**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Linux/macOS
-   # 或 Windows:
-   # .venv\Scripts\activate
-   ```
+如果还没有安装 uv：
+```bash
+# 安装 uv (Linux/macOS)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-3. **安装依赖**
-   ```bash
-   pip install -e .
-   ```
+# 或使用 pip 安装
+pip install uv
+```
+
+然后：
+```bash
+# 1. 进入项目目录
+cd /path/to/soloCoder-E
+
+# 2. 同步依赖（自动创建虚拟环境并安装）
+uv sync
+```
+
+#### 方式二：使用 pip
+
+```bash
+# 1. 进入项目目录
+cd /path/to/soloCoder-E
+
+# 2. 创建虚拟环境（推荐）
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# 或 Windows:
+# .venv\Scripts\activate
+
+# 3. 安装依赖
+pip install -e .
+```
 
 ### 启动服务
 
 #### 方式一：使用脚本（推荐）
 
+脚本会自动检测可用的运行环境（优先使用 uv，然后是虚拟环境，最后是系统 Python）。
+
 ```bash
+# 给予执行权限（首次使用）
+chmod +x start.sh stop.sh restart.sh
+
 # 启动服务（后台运行）
 ./start.sh
 
@@ -119,6 +143,11 @@ soloCoder-E/
 
 启动成功后会显示：
 ```
+🔍 检测到 uv，将使用 uv run 执行
+✅ 运行方式: uv
+📦 检查依赖...
+🚀 启动电子阅读器...
+🌐 访问地址: http://0.0.0.0:5555
 ✅ 电子阅读器启动成功！
 📍 PID: 12345
 🌐 访问地址: http://0.0.0.0:5555
@@ -127,14 +156,21 @@ soloCoder-E/
 #### 方式二：直接运行
 
 ```bash
-# 前台运行（用于开发调试）
+# 使用 uv run（推荐）
+uv run python run.py
+
+# 或激活虚拟环境后运行
+source .venv/bin/activate
 python run.py
 
+# 前台运行（开发调试）
+uv run python run.py
+
 # 带自动重载（开发模式）
-python run.py --reload
+uv run python run.py --reload
 
 # 指定地址和端口
-python run.py --host 127.0.0.1 --port 8080
+uv run python run.py --host 127.0.0.1 --port 8080
 ```
 
 ### 访问应用

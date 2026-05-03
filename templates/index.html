@@ -15,6 +15,12 @@
         <main class="main-content">
             <section class="upload-section">
                 <h2>上传电子书</h2>
+                <div class="category-select-container">
+                    <label for="categorySelect">选择分类：</label>
+                    <select id="categorySelect" class="category-select">
+                        <option value="">不分类</option>
+                    </select>
+                </div>
                 <div class="upload-area" id="uploadArea">
                     <p>拖拽文件到此处，或点击选择文件</p>
                     <p class="upload-hint">支持 .epub 和 .txt 格式</p>
@@ -29,7 +35,15 @@
             </section>
             
             <section class="books-section">
-                <h2>我的书架</h2>
+                <div class="section-header">
+                    <h2>我的书架</h2>
+                    <div class="category-filter-container">
+                        <label for="categoryFilter">筛选分类：</label>
+                        <select id="categoryFilter" class="category-filter">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="books-grid" id="booksGrid">
                     <!-- 书籍列表将通过JavaScript动态加载 -->
                 </div>
@@ -38,6 +52,19 @@
                 </div>
             </section>
         </main>
+    </div>
+    
+    <div class="category-modal" id="categoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3>选择分类</h3>
+            <select id="modalCategorySelect" class="category-select">
+                <option value="">不分类</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelCategoryBtn">取消</button>
+                <button class="btn btn-primary" id="confirmCategoryBtn">确定</button>
+            </div>
+        </div>
     </div>
     
     <script src="/static/js/app.js"></script>

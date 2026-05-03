@@ -4,6 +4,17 @@ from datetime import datetime
 from .database import Base
 
 
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True)
+    description = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    books = relationship("Book", back_populates="category")
+
+
 class Book(Base):
     __tablename__ = "books"
 
@@ -12,11 +23,13 @@ class Book(Base):
     author = Column(String(255))
     file_path = Column(String(500), nullable=False)
     file_type = Column(String(10), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_read_at = Column(DateTime, default=datetime.utcnow)
 
     chapters = relationship("Chapter", back_populates="book", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", back_populates="book", cascade="all, delete-orphan")
+    category = relationship("Category", back_populates="books")
 
 
 class Chapter(Base):

@@ -2,14 +2,14 @@ import os
 import shutil
 from datetime import datetime
 from typing import List
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from .database import SessionLocal, engine
-from .models import Base, Book, Chapter, Bookmark
+from .models import Base, Book, Chapter, Bookmark, Category
 from .parser import BookParser
 
 Base.metadata.create_all(bind=engine)
@@ -38,6 +38,10 @@ class BookmarkCreate(BaseModel):
     note: str = ""
 
 
+class BookCategoryUpdate(BaseModel):
+    category_id: int = None
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
@@ -52,9 +56,18 @@ async def reader(request: Request, book_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/upload/")
-async def upload_book(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_book(
+    file: UploadFile = File(...), 
+    category_id: int = Form(None),
+    db: Session = Depends(get_db)
+):
     if not (file.filename.endswith('.epub') or file.filename.endswith('.txt')):
         raise HTTPException(status_code=400, detail="Only .epub and .txt files are supported")
+    
+    if category_id is not None:
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if not category:
+            raise HTTPException(status_code=400, detail="Invalid category ID")
     
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
@@ -70,7 +83,8 @@ async def upload_book(file: UploadFile = File(...), db: Session = Depends(get_db
         title=title,
         author=author,
         file_path=file_path,
-        file_type=os.path.splitext(file.filename)[1][1:]
+        file_type=os.path.splitext(file.filename)[1][1:],
+        category_id=category_id
     )
     db.add(db_book)
     db.commit()
@@ -88,25 +102,64 @@ async def upload_book(file: UploadFile = File(...), db: Session = Depends(get_db
     
     db.commit()
     
+    category_name = None
+    if db_book.category:
+        category_name = db_book.category.name
+    
     return JSONResponse(content={
         "id": db_book.id,
         "title": db_book.title,
         "author": db_book.author,
+        "category_id": db_book.category_id,
+        "category_name": category_name,
         "chapters_count": len(chapters)
     })
 
 
 @app.get("/books/")
-async def get_books(db: Session = Depends(get_db)):
-    books = db.query(Book).order_by(Book.last_read_at.desc()).all()
+async def get_books(category_id: int = None, db: Session = Depends(get_db)):
+    query = db.query(Book)
+    if category_id is not None:
+        query = query.filter(Book.category_id == category_id)
+    books = query.order_by(Book.last_read_at.desc()).all()
+    
     return JSONResponse(content=[{
         "id": book.id,
         "title": book.title,
         "author": book.author,
         "file_type": book.file_type,
+        "category_id": book.category_id,
+        "category_name": book.category.name if book.category else None,
         "created_at": book.created_at.isoformat() if book.created_at else None,
         "last_read_at": book.last_read_at.isoformat() if book.last_read_at else None
     } for book in books])
+
+
+@app.put("/books/{book_id}/category")
+async def update_book_category(
+    book_id: int, 
+    category_update: BookCategoryUpdate,
+    db: Session = Depends(get_db)
+):
+    book = db.query(Book).filter(Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    if category_update.category_id is not None:
+        category = db.query(Category).filter(Category.id == category_update.category_id).first()
+        if not category:
+            raise HTTPException(status_code=400, detail="Invalid category ID")
+    
+    book.category_id = category_update.category_id
+    db.commit()
+    db.refresh(book)
+    
+    return JSONResponse(content={
+        "id": book.id,
+        "title": book.title,
+        "category_id": book.category_id,
+        "category_name": book.category.name if book.category else None
+    })
 
 
 @app.get("/books/{book_id}")
@@ -215,3 +268,28 @@ async def delete_book(book_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return JSONResponse(content={"message": "Book deleted successfully"})
+
+
+@app.get("/categories/")
+async def get_categories(db: Session = Depends(get_db)):
+    categories = db.query(Category).order_by(Category.id).all()
+    return JSONResponse(content=[{
+        "id": category.id,
+        "name": category.name,
+        "description": category.description,
+        "books_count": len(category.books)
+    } for category in categories])
+
+
+@app.get("/categories/{category_id}")
+async def get_category(category_id: int, db: Session = Depends(get_db)):
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    return JSONResponse(content={
+        "id": category.id,
+        "name": category.name,
+        "description": category.description,
+        "books_count": len(category.books)
+    })

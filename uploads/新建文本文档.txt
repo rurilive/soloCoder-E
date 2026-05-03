@@ -1,0 +1,5 @@
+技术栈使用python uv fastapi sqlite jinja2 绑定到0.0.0.0:，添加gitignore文件，不要往git上传垃圾。
+
+ps -aux | grep python | grep -v grep | cut -c10-16 | xargs kill -9
+
+制作一个日程共享与会议安排工具，使用uv管理的python和react，绑定端口到0.0.0.0:2222，添加gitignore，要有一键启停脚本

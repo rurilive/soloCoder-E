@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white rounded-3 p-5">
+            <h1 class="display-4">邻里互助平台</h1>
+            <p class="lead">拼团买菜、借工具、遛狗互助，让邻里更亲近</p>
+            <hr class="my-4 bg-light">
+            <div class="d-flex gap-3">
+                <a href="{{ url_for('group_buy.create') }}" class="btn btn-light btn-lg">发起拼团</a>
+                <a href="{{ url_for('tool_lend.create') }}" class="btn btn-outline-light btn-lg">发布工具</a>
+                <a href="{{ url_for('dog_walk.create') }}" class="btn btn-outline-light btn-lg">需要遛狗</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="card text-center card-hover h-100">
+            <div class="card-body">
+                <div class="display-1 text-success mb-3">🥬</div>
+                <h5 class="card-title">拼团买菜</h5>
+                <p class="card-text">和邻居一起拼团采购新鲜蔬菜水果，享受批发价优惠</p>
+                <a href="{{ url_for('group_buy.list') }}" class="btn btn-success">查看拼团</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-center card-hover h-100">
+            <div class="card-body">
+                <div class="display-1 text-warning mb-3">🔧</div>
+                <h5 class="card-title">借工具</h5>
+                <p class="card-text">邻里之间互通有无，闲置工具不再浪费，积分感谢更实在</p>
+                <a href="{{ url_for('tool_lend.list') }}" class="btn btn-warning">浏览工具</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-center card-hover h-100">
+            <div class="card-body">
+                <div class="display-1 text-info mb-3">🐕</div>
+                <h5 class="card-title">遛狗互助</h5>
+                <p class="card-text">出差、忙的时候，邻居帮你遛狗，还能赚积分</p>
+                <a href="{{ url_for('dog_walk.list') }}" class="btn btn-info text-white">查看求助</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if group_buys %}
+<div class="row mb-5">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+        <h3>🔥 热门拼团</h3>
+        <a href="{{ url_for('group_buy.list') }}" class="btn btn-outline-primary">查看全部</a>
+    </div>
+    {% for group_buy in group_buys %}
+    <div class="col-md-4 mb-3">
+        <div class="card card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">{{ group_buy.title }}</h5>
+                    <span class="badge bg-primary status-badge">招募中</span>
+                </div>
+                <p class="card-text text-muted small">{{ group_buy.category }}</p>
+                <div class="mb-2">
+                    <strong class="text-danger">¥{{ group_buy.price_per_person }}/人</strong>
+                </div>
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>已参团: {{ group_buy.current_participants }}/{{ group_buy.max_participants or '不限' }}</span>
+                    <span>截止: {{ group_buy.deadline.strftime('%m-%d %H:%M') }}</span>
+                </div>
+                <a href="{{ url_for('group_buy.detail', id=group_buy.id) }}" class="btn btn-primary btn-sm w-100 mt-3">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if tools %}
+<div class="row mb-5">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+        <h3>🔧 可借工具</h3>
+        <a href="{{ url_for('tool_lend.list') }}" class="btn btn-outline-warning">查看全部</a>
+    </div>
+    {% for tool in tools %}
+    <div class="col-md-3 mb-3">
+        <div class="card card-hover">
+            <div class="card-body">
+                <h5 class="card-title">{{ tool.name }}</h5>
+                <p class="card-text text-muted small">{{ tool.category }}</p>
+                {% if tool.points_required > 0 %}
+                <div class="mb-2">
+                    <span class="badge bg-warning text-dark">需要 {{ tool.points_required }} 积分</span>
+                </div>
+                {% endif %}
+                <a href="{{ url_for('tool_lend.detail', id=tool.id) }}" class="btn btn-outline-warning btn-sm w-100">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if dog_walks %}
+<div class="row mb-5">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+        <h3>🐕 遛狗求助</h3>
+        <a href="{{ url_for('dog_walk.list') }}" class="btn btn-outline-info">查看全部</a>
+    </div>
+    {% for dog_walk in dog_walks %}
+    <div class="col-md-4 mb-3">
+        <div class="card card-hover">
+            <div class="card-body">
+                <h5 class="card-title">{{ dog_walk.title }}</h5>
+                <p class="card-text text-muted small">
+                    {{ dog_walk.dog_name or '狗狗' }} · {{ dog_walk.dog_size }}
+                </p>
+                <div class="mb-2">
+                    <span class="badge bg-info text-white">奖励 {{ dog_walk.points_reward }} 积分</span>
+                </div>
+                <div class="text-muted small">
+                    <span>时间: {{ dog_walk.walk_date.strftime('%m-%d %H:%M') }}</span>
+                </div>
+                <a href="{{ url_for('dog_walk.detail', id=dog_walk.id) }}" class="btn btn-outline-info btn-sm w-100 mt-3">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

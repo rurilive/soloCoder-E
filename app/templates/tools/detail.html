@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tool.name }} - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="card-title mb-0">{{ tool.name }}</h2>
+                    <span class="badge {% if tool.status == 'available' %}bg-success{% elif tool.status == 'loaned' %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                        {% if tool.status == 'available' %}可借
+                        {% elif tool.status == 'loaned' %}已借出
+                        {% else %}{{ tool.status }}{% endif %}
+                    </span>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <small class="text-muted">分类</small>
+                        <div class="fw-bold">{{ tool.category }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">发布者</small>
+                        <div class="fw-bold">{{ tool.owner.username }}</div>
+                    </div>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">工具信息</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">所需积分</small>
+                                <div class="h3 mb-0">
+                                    {% if tool.points_required > 0 %}
+                                    <span class="text-warning">{{ tool.points_required }}</span> 积分
+                                    {% else %}
+                                    <span class="text-success">免费</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">押金</small>
+                                <div class="h3 mb-0">
+                                    {% if tool.deposit > 0 %}
+                                    <span class="text-info">¥{{ tool.deposit }}</span>
+                                    {% else %}
+                                    <span class="text-success">无押金</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <small class="text-muted">发布时间</small>
+                            <div class="fw-bold">{{ tool.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if tool.description %}
+                <div class="mb-4">
+                    <h5>工具描述</h5>
+                    <p class="card-text">{{ tool.description }}</p>
+                </div>
+                {% endif %}
+
+                {% if current_loan %}
+                <div class="card border-warning mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0">当前借用信息</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <small class="text-muted">借用人</small>
+                                <div class="fw-bold">{{ current_loan.borrower.username }}</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <small class="text-muted">借用时间</small>
+                                <div class="fw-bold">{{ current_loan.start_date.strftime('%Y-%m-%d') }}</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <small class="text-muted">预计归还</small>
+                                <div class="fw-bold">{{ current_loan.expected_return_date.strftime('%Y-%m-%d') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">操作</h5>
+            </div>
+            <div class="card-body">
+                {% if tool.status == 'available' %}
+                    {% if tool.owner_id != current_user.id and current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('tool_lend.borrow', id=tool.id) }}">
+                        <div class="mb-3">
+                            <label for="days" class="form-label">借用天数</label>
+                            <select class="form-select" id="days" name="days">
+                                {% for i in range(1, 31) %}
+                                <option value="{{ i }}" {% if i == 7 %}selected{% endif %}>{{ i }} 天</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if tool.points_required > 0 %}
+                        <div class="alert alert-warning small">
+                            <strong>注意：</strong>借用此工具需要支付 {{ tool.points_required }} 积分
+                            {% if current_user.is_authenticated and current_user.points < tool.points_required %}
+                            <br><span class="text-danger">您的积分不足 (当前: {{ current_user.points }})</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        <button type="submit" class="btn btn-warning w-100"
+                                {% if current_user.is_authenticated and tool.points_required > current_user.points %}disabled{% endif %}>
+                            立即借用
+                        </button>
+                    </form>
+                    {% elif tool.owner_id == current_user.id %}
+                    <div class="alert alert-info">
+                        <strong>这是您发布的工具</strong>
+                        <div class="small mt-1">
+                            <a href="{{ url_for('main.dashboard') }}" class="alert-link">查看我的发布</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <strong>请先登录</strong>
+                        <div class="small mt-1">
+                            <a href="{{ url_for('auth.login') }}" class="alert-link">点击登录</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% elif tool.status == 'loaned' %}
+                    <div class="alert alert-warning">
+                        <strong>工具已被借出</strong>
+                        <div class="small mt-1">请稍后再来查看</div>
+                    </div>
+                {% endif %}
+
+                {% if current_user.is_authenticated and tool.status == 'loaned' and tool.current_borrower_id == current_user.id %}
+                <hr class="my-3">
+                <form method="POST" action="{{ url_for('tool_lend.return_tool', id=tool.id) }}">
+                    <button type="submit" class="btn btn-success w-100" onclick="return confirm('确定要归还此工具吗？')">
+                        归还工具
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">发布者信息</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                        {{ tool.owner.username[0].upper() }}
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">{{ tool.owner.username }}</h6>
+                        <small class="text-muted">信誉分: {{ "%.1f"|format(tool.owner.reputation_score) }}</small>
+                    </div>
+                </div>
+                <div class="small text-muted">
+                    <div>👑 信誉分: {{ "%.1f"|format(tool.owner.reputation_score) }}</div>
+                    <div>🤝 已帮助: {{ tool.owner.total_helps }} 次</div>
+                    <div>⭐ 积分: {{ tool.owner.points }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

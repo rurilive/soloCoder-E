@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}发布遛狗求助 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">发布遛狗求助</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">求助标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required placeholder="例如：需要帮忙周末遛狗">
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="dog_name" class="form-label">狗狗名字</label>
+                            <input type="text" class="form-control" id="dog_name" name="dog_name" placeholder="例如：旺财">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="dog_breed" class="form-label">品种</label>
+                            <input type="text" class="form-control" id="dog_breed" name="dog_breed" placeholder="例如：金毛">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="dog_age" class="form-label">年龄 (岁)</label>
+                            <input type="number" class="form-control" id="dog_age" name="dog_age" min="0" placeholder="例如：3">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="dog_size" class="form-label">体型</label>
+                            <select class="form-select" id="dog_size" name="dog_size">
+                                {% for value, label in sizes %}
+                                <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="walk_date" class="form-label">遛狗时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="walk_date" name="walk_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="duration_minutes" class="form-label">时长 (分钟)</label>
+                            <select class="form-select" id="duration_minutes" name="duration_minutes">
+                                <option value="15">15 分钟</option>
+                                <option value="30" selected>30 分钟</option>
+                                <option value="45">45 分钟</option>
+                                <option value="60">60 分钟</option>
+                                <option value="90">90 分钟</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="meeting_location" class="form-label">见面地点</label>
+                            <input type="text" class="form-control" id="meeting_location" name="meeting_location" placeholder="例如：小区北门">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="points_reward" class="form-label">积分奖励</label>
+                            <input type="number" class="form-control" id="points_reward" name="points_reward" min="0" value="10" placeholder="默认10积分">
+                            <small class="text-muted">完成后支付给帮忙者</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">需求描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="请描述遛狗需求，包括狗狗性格、注意事项等..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-info text-white btn-lg">发布求助</button>
+                        <a href="{{ url_for('dog_walk.list') }}" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getMinutes() % 15, 0, 0);
+    
+    const walkDateInput = document.getElementById('walk_date');
+    walkDateInput.min = now.toISOString().slice(0, 16);
+    
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(18, 0, 0, 0);
+    
+    walkDateInput.value = tomorrow.toISOString().slice(0, 16);
+});
+</script>
+{% endblock %}

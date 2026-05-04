@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dog_walk.title }} - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="card-title mb-0">{{ dog_walk.title }}</h2>
+                    <span class="badge {% if dog_walk.status == 'open' %}bg-primary{% elif dog_walk.status == 'accepted' %}bg-warning text-dark{% elif dog_walk.status == 'completed' %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                        {% if dog_walk.status == 'open' %}待接单
+                        {% elif dog_walk.status == 'accepted' %}进行中
+                        {% elif dog_walk.status == 'completed' %}已完成
+                        {% elif dog_walk.status == 'cancelled' %}已取消
+                        {% else %}{{ dog_walk.status }}{% endif %}
+                    </span>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <small class="text-muted">发布者</small>
+                        <div class="fw-bold">{{ dog_walk.creator.username }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">积分奖励</small>
+                        <div class="fw-bold text-info">+{{ dog_walk.points_reward }} 积分</div>
+                    </div>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">狗狗信息</h5>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <small class="text-muted">名字</small>
+                                <div class="fw-bold">{{ dog_walk.dog_name or '未填写' }}</div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <small class="text-muted">品种</small>
+                                <div class="fw-bold">{{ dog_walk.dog_breed or '未填写' }}</div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <small class="text-muted">年龄</small>
+                                <div class="fw-bold">{{ dog_walk.dog_age or '未填写' }} 岁</div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <small class="text-muted">体型</small>
+                                <div class="fw-bold">
+                                    {% if dog_walk.dog_size == 'small' %}小型犬
+                                    {% elif dog_walk.dog_size == 'large' %}大型犬
+                                    {% else %}中型犬{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">遛狗时间</small>
+                                <div class="fw-bold">{{ dog_walk.walk_date.strftime('%Y-%m-%d %H:%M') }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <small class="text-muted">时长</small>
+                                <div class="fw-bold">{{ dog_walk.duration_minutes }} 分钟</div>
+                            </div>
+                        </div>
+                        {% if dog_walk.meeting_location %}
+                        <div>
+                            <small class="text-muted">见面地点</small>
+                            <div class="fw-bold">{{ dog_walk.meeting_location }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if dog_walk.description %}
+                <div class="mb-4">
+                    <h5>需求描述</h5>
+                    <p class="card-text">{{ dog_walk.description }}</p>
+                </div>
+                {% endif %}
+
+                {% if dog_walk.helper_id %}
+                <div class="card border-info mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">帮忙信息</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-info rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                {{ dog_walk.helper.username[0].upper() }}
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-0">{{ dog_walk.helper.username }}</h6>
+                                <small class="text-muted">信誉分: {{ "%.1f"|format(dog_walk.helper.reputation_score) }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if dog_walk.status == 'completed' %}
+                <div class="card border-success mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">评价信息</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if dog_walk.helper_rating %}
+                        <div class="mb-3">
+                            <strong>发布者对帮忙者的评价:</strong>
+                            <div class="text-warning">
+                                {% for i in range(dog_walk.helper_rating) %}⭐{% endfor %}
+                                {% for i in range(5 - dog_walk.helper_rating) %}☆{% endfor %}
+                            </div>
+                            {% if dog_walk.helper_comment %}
+                            <p class="text-muted small mt-1">{{ dog_walk.helper_comment }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if dog_walk.creator_rating %}
+                        <div>
+                            <strong>帮忙者对发布者的评价:</strong>
+                            <div class="text-warning">
+                                {% for i in range(dog_walk.creator_rating) %}⭐{% endfor %}
+                                {% for i in range(5 - dog_walk.creator_rating) %}☆{% endfor %}
+                            </div>
+                            {% if dog_walk.creator_comment %}
+                            <p class="text-muted small mt-1">{{ dog_walk.creator_comment }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">操作</h5>
+            </div>
+            <div class="card-body">
+                {% if dog_walk.status == 'open' %}
+                    {% if dog_walk.creator_id != current_user.id and current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('dog_walk.accept', id=dog_walk.id) }}">
+                        <div class="alert alert-info small mb-3">
+                            <strong>完成后可获得:</strong> +{{ dog_walk.points_reward }} 积分
+                        </div>
+                        <button type="submit" class="btn btn-info text-white w-100">
+                            我来帮忙
+                        </button>
+                    </form>
+                    {% elif dog_walk.creator_id == current_user.id %}
+                    <div class="alert alert-info">
+                        <strong>这是您发布的求助</strong>
+                    </div>
+                    <form method="POST" action="{{ url_for('dog_walk.cancel', id=dog_walk.id) }}">
+                        <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('确定要取消吗？')">
+                            取消求助
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <strong>请先登录</strong>
+                        <div class="small mt-1">
+                            <a href="{{ url_for('auth.login') }}" class="alert-link">点击登录</a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                {% elif dog_walk.status == 'accepted' %}
+                    {% if dog_walk.creator_id == current_user.id %}
+                    <div class="alert alert-info mb-3">
+                        <strong>{{ dog_walk.helper.username }}</strong> 正在帮忙遛狗
+                    </div>
+                    <form method="POST" action="{{ url_for('dog_walk.complete', id=dog_walk.id) }}">
+                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('确认完成？')">
+                            标记完成
+                        </button>
+                    </form>
+                    {% elif dog_walk.helper_id == current_user.id %}
+                    <div class="alert alert-info">
+                        <strong>您正在帮忙遛狗</strong>
+                        <div class="small mt-1">请等待发布者确认完成</div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <strong>已有其他人帮忙</strong>
+                    </div>
+                    {% endif %}
+
+                {% elif dog_walk.status == 'completed' %}
+                    {% if dog_walk.creator_id == current_user.id and not dog_walk.helper_rating %}
+                    <div class="mb-3">
+                        <h6>评价帮忙者</h6>
+                        <form method="POST" action="{{ url_for('dog_walk.rate', id=dog_walk.id) }}">
+                            <input type="hidden" name="rating_type" value="helper">
+                            <div class="mb-2">
+                                <label class="form-label">评分</label>
+                                <select class="form-select" name="rating">
+                                    {% for i in range(5, 0, -1) %}
+                                    <option value="{{ i }}">{{ i }} 星</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">评价</label>
+                                <textarea class="form-control" name="comment" rows="2" placeholder="请评价..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">提交评价</button>
+                        </form>
+                    </div>
+                    {% elif dog_walk.helper_id == current_user.id and not dog_walk.creator_rating %}
+                    <div class="mb-3">
+                        <h6>评价发布者</h6>
+                        <form method="POST" action="{{ url_for('dog_walk.rate', id=dog_walk.id) }}">
+                            <input type="hidden" name="rating_type" value="creator">
+                            <div class="mb-2">
+                                <label class="form-label">评分</label>
+                                <select class="form-select" name="rating">
+                                    {% for i in range(5, 0, -1) %}
+                                    <option value="{{ i }}">{{ i }} 星</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">评价</label>
+                                <textarea class="form-control" name="comment" rows="2" placeholder="请评价..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">提交评价</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <strong>任务已完成</strong>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">发布者信息</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                        {{ dog_walk.creator.username[0].upper() }}
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">{{ dog_walk.creator.username }}</h6>
+                        <small class="text-muted">信誉分: {{ "%.1f"|format(dog_walk.creator.reputation_score) }}</small>
+                    </div>
+                </div>
+                <div class="small text-muted">
+                    <div>👑 信誉分: {{ "%.1f"|format(dog_walk.creator.reputation_score) }}</div>
+                    <div>🤝 已帮助: {{ dog_walk.creator.total_helps }} 次</div>
+                    <div>⭐ 积分: {{ dog_walk.creator.points }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

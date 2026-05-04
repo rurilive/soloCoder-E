@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}发起拼团 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">发起拼团</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">拼团标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required placeholder="例如：新鲜草莓拼团">
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">分类 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="生鲜蔬菜">生鲜蔬菜</option>
+                                <option value="水果">水果</option>
+                                <option value="肉类海鲜">肉类海鲜</option>
+                                <option value="日用品">日用品</option>
+                                <option value="零食饮料">零食饮料</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="price_per_person" class="form-label">每人价格 (元) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="price_per_person" name="price_per_person" required min="0" step="0.01" placeholder="例如：29.9">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="min_participants" class="form-label">最少成团人数</label>
+                            <input type="number" class="form-control" id="min_participants" name="min_participants" min="2" value="5" placeholder="默认5人">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="max_participants" class="form-label">最大参与人数</label>
+                            <input type="number" class="form-control" id="max_participants" name="max_participants" min="1" placeholder="不填则不限">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="deadline" class="form-label">报名截止时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="deadline" name="deadline" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="delivery_date" class="form-label">预计配送时间</label>
+                            <input type="datetime-local" class="form-control" id="delivery_date" name="delivery_date">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="pickup_location" class="form-label">自提地点</label>
+                        <input type="text" class="form-control" id="pickup_location" name="pickup_location" placeholder="例如：小区北门保安室">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">商品描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="请详细描述商品信息，包括产地、规格、品质等..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">发起拼团</button>
+                        <a href="{{ url_for('group_buy.list') }}" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getMinutes() % 15, 0, 0);
+    
+    const deadlineInput = document.getElementById('deadline');
+    const deliveryDateInput = document.getElementById('delivery_date');
+    
+    deadlineInput.min = now.toISOString().slice(0, 16);
+    
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    deadlineInput.value = tomorrow.toISOString().slice(0, 16);
+    
+    if (deliveryDateInput) {
+        const dayAfter = new Date(tomorrow);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+        deliveryDateInput.value = dayAfter.toISOString().slice(0, 16);
+    }
+});
+</script>
+{% endblock %}

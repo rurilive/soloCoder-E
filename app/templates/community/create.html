@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}新建小区 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">新建小区</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">小区名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="例如：阳光花园小区">
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="province" class="form-label">省份</label>
+                            <input type="text" class="form-control" id="province" name="province" placeholder="例如：广东省">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="city" class="form-label">城市</label>
+                            <input type="text" class="form-control" id="city" name="city" placeholder="例如：深圳市">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">详细地址</label>
+                        <input type="text" class="form-control" id="address" name="address" placeholder="例如：南山区科技园路1号">
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">创建小区</button>
+                        <a href="{{ url_for('community.list') }}" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

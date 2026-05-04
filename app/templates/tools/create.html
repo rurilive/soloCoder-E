@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}发布工具 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">发布工具</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">工具名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="例如：电钻、梯子、烧烤架">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">分类 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="category" name="category" required>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="points_required" class="form-label">所需积分</label>
+                            <input type="number" class="form-control" id="points_required" name="points_required" min="0" value="0" placeholder="0表示免费">
+                            <small class="text-muted">借用人需要支付的积分，将转给您</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="deposit" class="form-label">押金 (元)</label>
+                            <input type="number" class="form-control" id="deposit" name="deposit" min="0" step="0.01" value="0" placeholder="0表示无押金">
+                            <small class="text-muted">线下收取的押金，仅作参考</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">工具描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="请详细描述工具的状态、使用方法、注意事项等..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg">发布工具</button>
+                        <a href="{{ url_for('tool_lend.list') }}" class="btn btn-outline-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

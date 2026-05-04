@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}拼团买菜 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>🥬 拼团买菜</h2>
+        <a href="{{ url_for('group_buy.create') }}" class="btn btn-success">发起拼团</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="community_id" class="form-label">小区</label>
+                <select class="form-select" id="community_id" name="community_id">
+                    <option value="">全部小区</option>
+                    {% for community in communities %}
+                    <option value="{{ community.id }}" {% if request.args.get('community_id')|int == community.id %}selected{% endif %}>
+                        {{ community.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="recruiting" {% if current_status == 'recruiting' %}selected{% endif %}>招募中</option>
+                    <option value="active" {% if current_status == 'active' %}selected{% endif %}>进行中</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>已完成</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">筛选</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if group_buys %}
+<div class="row">
+    {% for group_buy in group_buys %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ group_buy.title }}</h5>
+                    <span class="badge {% if group_buy.status == 'recruiting' %}bg-primary{% elif group_buy.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if group_buy.status == 'recruiting' %}招募中
+                        {% elif group_buy.status == 'active' %}进行中
+                        {% elif group_buy.status == 'completed' %}已完成
+                        {% else %}{{ group_buy.status }}{% endif %}
+                    </span>
+                </div>
+                <p class="text-muted small mb-2">{{ group_buy.category }}</p>
+                {% if group_buy.description %}
+                <p class="card-text small">{{ group_buy.description[:100] }}{% if group_buy.description|length > 100 %}...{% endif %}</p>
+                {% endif %}
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <h4 class="text-danger mb-0">¥{{ group_buy.price_per_person }}</h4>
+                        <small class="text-muted">每人</small>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div class="mb-1">
+                            <small class="text-muted">已参团</small>
+                            <div class="fw-bold">{{ group_buy.current_participants }}/{{ group_buy.max_participants or '不限' }}</div>
+                        </div>
+                        <div>
+                            <small class="text-muted">截止</small>
+                            <div class="fw-bold">{{ group_buy.deadline.strftime('%m-%d %H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('group_buy.detail', id=group_buy.id) }}" class="btn btn-outline-primary w-100">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="display-1 text-muted mb-3">🥬</div>
+        <h4 class="text-muted mb-3">暂无拼团</h4>
+        <p class="text-muted mb-4">成为第一个发起拼团的人吧！</p>
+        <a href="{{ url_for('group_buy.create') }}" class="btn btn-success">发起拼团</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

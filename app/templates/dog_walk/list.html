@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}遛狗互助 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>🐕 遛狗互助</h2>
+        <a href="{{ url_for('dog_walk.create') }}" class="btn btn-info text-white">发布求助</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="community_id" class="form-label">小区</label>
+                <select class="form-select" id="community_id" name="community_id">
+                    <option value="">全部小区</option>
+                    {% for community in communities %}
+                    <option value="{{ community.id }}" {% if request.args.get('community_id')|int == community.id %}selected{% endif %}>
+                        {{ community.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="open" {% if current_status == 'open' %}selected{% endif %}>待接单</option>
+                    <option value="accepted" {% if current_status == 'accepted' %}selected{% endif %}>进行中</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>已完成</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">筛选</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if dog_walks %}
+<div class="row">
+    {% for dog_walk in dog_walks %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ dog_walk.title }}</h5>
+                    <span class="badge {% if dog_walk.status == 'open' %}bg-primary{% elif dog_walk.status == 'accepted' %}bg-warning text-dark{% elif dog_walk.status == 'completed' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if dog_walk.status == 'open' %}待接单
+                        {% elif dog_walk.status == 'accepted' %}进行中
+                        {% elif dog_walk.status == 'completed' %}已完成
+                        {% elif dog_walk.status == 'cancelled' %}已取消
+                        {% else %}{{ dog_walk.status }}{% endif %}
+                    </span>
+                </div>
+                <p class="text-muted small mb-2">
+                    {{ dog_walk.dog_name or '狗狗' }} · 
+                    {% if dog_walk.dog_size == 'small' %}小型犬
+                    {% elif dog_walk.dog_size == 'large' %}大型犬
+                    {% else %}中型犬{% endif %}
+                </p>
+                {% if dog_walk.description %}
+                <p class="card-text small">{{ dog_walk.description[:100] }}{% if dog_walk.description|length > 100 %}...{% endif %}</p>
+                {% endif %}
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <div class="text-info fw-bold">
+                            ⭐ +{{ dog_walk.points_reward }} 积分
+                        </div>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div class="small text-muted">
+                            {{ dog_walk.walk_date.strftime('%m-%d %H:%M') }}
+                        </div>
+                        <div class="small text-muted">
+                            {{ dog_walk.duration_minutes }} 分钟
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{{ url_for('dog_walk.detail', id=dog_walk.id) }}" class="btn btn-outline-info w-100">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="display-1 text-muted mb-3">🐕</div>
+        <h4 class="text-muted mb-3">暂无遛狗求助</h4>
+        <p class="text-muted mb-4">成为第一个发布遛狗求助的人吧！</p>
+        <a href="{{ url_for('dog_walk.create') }}" class="btn btn-info text-white">发布求助</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

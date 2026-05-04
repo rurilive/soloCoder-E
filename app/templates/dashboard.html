@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}我的 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="ms-4">
+                        <h2 class="mb-1">{{ current_user.username }}</h2>
+                        <p class="text-muted mb-2">{{ current_user.email }}</p>
+                        <div class="d-flex gap-3">
+                            <span class="badge bg-warning text-dark fs-6">⭐ {{ current_user.points }} 积分</span>
+                            <span class="badge bg-info text-white fs-6">👑 信誉分: {{ "%.1f"|format(current_user.reputation_score) }}</span>
+                            <span class="badge bg-success fs-6">🤝 已帮助 {{ current_user.total_helps }} 次</span>
+                            {% if current_user.is_verified %}
+                                <span class="badge bg-success fs-6">✅ 已认证</span>
+                            {% elif current_user.verification_status == 'pending' %}
+                                <span class="badge bg-warning text-dark fs-6">⏳ 认证中</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">❌ 未认证</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary">编辑资料</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">我发起的拼团</h5>
+                <a href="{{ url_for('group_buy.create') }}" class="btn btn-primary btn-sm">发起新拼团</a>
+            </div>
+            <div class="card-body">
+                {% if group_buys %}
+                <div class="list-group">
+                    {% for group_buy in group_buys %}
+                    <a href="{{ url_for('group_buy.detail', id=group_buy.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ group_buy.title }}</h6>
+                                <small class="text-muted">{{ group_buy.category }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if group_buy.status == 'recruiting' %}bg-primary{% elif group_buy.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if group_buy.status == 'recruiting' %}招募中
+                                    {% elif group_buy.status == 'active' %}进行中
+                                    {% elif group_buy.status == 'completed' %}已完成
+                                    {% else %}{{ group_buy.status }}{% endif %}
+                                </span>
+                                <div class="small text-muted mt-1">
+                                    {{ group_buy.current_participants }}人参与 · ¥{{ group_buy.price_per_person }}/人
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">您还没有发起过拼团</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">我发布的工具</h5>
+                <a href="{{ url_for('tool_lend.create') }}" class="btn btn-warning btn-sm">发布新工具</a>
+            </div>
+            <div class="card-body">
+                {% if tools %}
+                <div class="list-group">
+                    {% for tool in tools %}
+                    <a href="{{ url_for('tool_lend.detail', id=tool.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ tool.name }}</h6>
+                                <small class="text-muted">{{ tool.category }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if tool.status == 'available' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {% if tool.status == 'available' %}可借
+                                    {% elif tool.status == 'loaned' %}已借出
+                                    {% else %}{{ tool.status }}{% endif %}
+                                </span>
+                                {% if tool.points_required > 0 %}
+                                <div class="small text-warning mt-1">需要 {{ tool.points_required }} 积分</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">您还没有发布过工具</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">我的遛狗求助</h5>
+                <a href="{{ url_for('dog_walk.create') }}" class="btn btn-info text-white btn-sm">发布新求助</a>
+            </div>
+            <div class="card-body">
+                {% if dog_walks %}
+                <div class="list-group">
+                    {% for dog_walk in dog_walks %}
+                    <a href="{{ url_for('dog_walk.detail', id=dog_walk.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ dog_walk.title }}</h6>
+                                <small class="text-muted">
+                                    {{ dog_walk.dog_name or '狗狗' }} · {{ dog_walk.walk_date.strftime('%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if dog_walk.status == 'open' %}bg-primary{% elif dog_walk.status == 'accepted' %}bg-warning text-dark{% elif dog_walk.status == 'completed' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if dog_walk.status == 'open' %}待接单
+                                    {% elif dog_walk.status == 'accepted' %}进行中
+                                    {% elif dog_walk.status == 'completed' %}已完成
+                                    {% elif dog_walk.status == 'cancelled' %}已取消
+                                    {% else %}{{ dog_walk.status }}{% endif %}
+                                </span>
+                                <div class="small text-info mt-1">奖励 {{ dog_walk.points_reward }} 积分</div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">您还没有发布过遛狗求助</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">快捷操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('group_buy.create') }}" class="btn btn-success">🥬 发起拼团</a>
+                    <a href="{{ url_for('tool_lend.create') }}" class="btn btn-warning">🔧 发布工具</a>
+                    <a href="{{ url_for('dog_walk.create') }}" class="btn btn-info text-white">🐕 需要遛狗</a>
+                    <a href="{{ url_for('community.create') }}" class="btn btn-primary">🏠 新建小区</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">积分说明</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li class="mb-2">✅ 新用户注册: +100 积分</li>
+                    <li class="mb-2">🐕 完成遛狗互助: +积分奖励</li>
+                    <li class="mb-2">🔧 出借工具: +对方支付的积分</li>
+                    <li class="mb-2">🔧 借用工具: -所需积分</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

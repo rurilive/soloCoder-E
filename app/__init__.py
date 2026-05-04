@@ -32,5 +32,37 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        init_admin_user(app)
 
     return app
+
+
+def init_admin_user(app):
+    from app.models import User
+    
+    admin_username = app.config.get('ADMIN_USERNAME', 'admin')
+    admin_email = app.config.get('ADMIN_EMAIL', 'admin@neighborhood.com')
+    admin_password = app.config.get('ADMIN_PASSWORD', 'Admin123!')
+    
+    existing_admin = User.query.filter_by(username=admin_username).first()
+    if existing_admin:
+        return
+    
+    existing_email = User.query.filter_by(email=admin_email).first()
+    if existing_email:
+        return
+    
+    admin = User(
+        username=admin_username,
+        email=admin_email,
+        is_verified=True,
+        verification_status='verified',
+        points=1000,
+        reputation_score=5.0
+    )
+    admin.set_password(admin_password)
+    
+    db.session.add(admin)
+    db.session.commit()
+    
+    app.logger.info(f'Admin user created: {admin_username}')

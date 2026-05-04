@@ -19,6 +19,16 @@ class Settings(BaseSettings):
     
     SESSION_SECRET_KEY: str = "your-super-secret-session-key-change-in-production"
     
+    DB_HOST: str = "64.83.36.96"
+    DB_PORT: int = 53306
+    DB_USER: str = "cp3b5MZxb8PVKvVpN059"
+    DB_PASSWORD: str = "lsTiBCoLk3cWvQKMZ4Mq"
+    DB_NAME: str = "ce"
+    
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+    
     model_config = {
         "env_file": ".env",
         "case_sensitive": True

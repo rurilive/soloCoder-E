@@ -6,8 +6,7 @@ from starlette import status
 from pathlib import Path
 
 from app.config import settings
-from app.utils.encryption import EncryptionManager
-from app.models.storage import StorageManager
+from app.models.db_storage import DBEncryptionManager, DBStorageManager
 from app.models.password_entry import PasswordEntry, PasswordCategory
 
 
@@ -15,25 +14,47 @@ router = APIRouter()
 
 templates = Jinja2Templates(directory=str(settings.TEMPLATES_DIR))
 
-_encryption_manager: Optional[EncryptionManager] = None
-_storage_manager: Optional[StorageManager] = None
-_session_unlocked = False
+_encryption_manager: Optional[DBEncryptionManager] = None
+_storage_manager: Optional[DBStorageManager] = None
+_db_session = None
+_db_session_local = None
 
 
-def get_encryption_manager() -> EncryptionManager:
+def _get_db_session_local():
+    """延迟导入获取数据库会话工厂"""
+    global _db_session_local
+    if _db_session_local is None:
+        from main import get_db_session_local
+        _db_session_local = get_db_session_local()
+    return _db_session_local
+
+
+def get_db_session():
+    """获取数据库会话"""
+    global _db_session
+    if _db_session is None:
+        SessionLocal = _get_db_session_local()
+        if SessionLocal:
+            _db_session = SessionLocal()
+    return _db_session
+
+
+def get_encryption_manager() -> DBEncryptionManager:
     """获取加密管理器单例"""
     global _encryption_manager
     if _encryption_manager is None:
-        _encryption_manager = EncryptionManager(settings.ENCRYPTION_KEY_FILE)
+        db_session = get_db_session()
+        _encryption_manager = DBEncryptionManager(db_session)
     return _encryption_manager
 
 
-def get_storage_manager() -> StorageManager:
+def get_storage_manager() -> DBStorageManager:
     """获取存储管理器单例"""
     global _storage_manager
     if _storage_manager is None:
         enc_manager = get_encryption_manager()
-        _storage_manager = StorageManager(enc_manager, settings.PASSWORD_STORAGE_FILE)
+        db_session = get_db_session()
+        _storage_manager = DBStorageManager(enc_manager, db_session)
     return _storage_manager
 
 

@@ -53,13 +53,19 @@ class PasswordEntry(BaseModel):
     
     def to_dict(self) -> dict:
         """转换为字典（用于序列化）"""
+        category_value = self.category
+        if isinstance(self.category, PasswordCategory):
+            category_value = self.category.value
+        elif hasattr(self.category, 'value'):
+            category_value = self.category.value
+        
         return {
             "id": self.id,
             "title": self.title,
             "username": self.username,
             "password": self.password,
             "url": self.url,
-            "category": self.category.value if isinstance(self.category, PasswordCategory) else self.category,
+            "category": category_value,
             "notes": self.notes,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat()
@@ -69,11 +75,30 @@ class PasswordEntry(BaseModel):
     def from_dict(cls, data: dict) -> "PasswordEntry":
         """从字典创建实例"""
         category = data.get("category", "其他")
-        if isinstance(category, str):
+        
+        if isinstance(category, PasswordCategory):
+            pass
+        elif isinstance(category, str):
             try:
                 category = PasswordCategory(category)
             except ValueError:
                 category = PasswordCategory.OTHER
+        elif hasattr(category, 'value'):
+            try:
+                category = PasswordCategory(category.value)
+            except (ValueError, TypeError):
+                category = PasswordCategory.OTHER
+        elif isinstance(category, dict):
+            cat_value = category.get('value') or category.get('name') or "其他"
+            if isinstance(cat_value, str):
+                try:
+                    category = PasswordCategory(cat_value)
+                except ValueError:
+                    category = PasswordCategory.OTHER
+            else:
+                category = PasswordCategory.OTHER
+        else:
+            category = PasswordCategory.OTHER
         
         created_at = data.get("created_at")
         if isinstance(created_at, str):

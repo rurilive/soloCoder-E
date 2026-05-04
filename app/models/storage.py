@@ -169,10 +169,23 @@ class StorageManager:
         :return: 该分类下的 PasswordEntry 列表
         """
         entries = self._load_from_file()
-        result = [
-            entry for entry in entries.values()
-            if entry.category == category
-        ]
+        
+        target_category_value = category.value if isinstance(category, PasswordCategory) else category
+        
+        result = []
+        for entry in entries.values():
+            entry_category_value = None
+            
+            if isinstance(entry.category, PasswordCategory):
+                entry_category_value = entry.category.value
+            elif isinstance(entry.category, str):
+                entry_category_value = entry.category
+            elif hasattr(entry.category, 'value'):
+                entry_category_value = entry.category.value
+            
+            if entry_category_value == target_category_value:
+                result.append(entry)
+        
         result.sort(key=lambda x: x.updated_at, reverse=True)
         return result
     
@@ -185,7 +198,19 @@ class StorageManager:
         counts = {cat.value: 0 for cat in PasswordCategory}
         
         for entry in entries.values():
-            counts[entry.category.value] += 1
+            category_value = None
+            
+            if isinstance(entry.category, PasswordCategory):
+                category_value = entry.category.value
+            elif isinstance(entry.category, str):
+                category_value = entry.category
+            elif hasattr(entry.category, 'value'):
+                category_value = entry.category.value
+            elif isinstance(entry.category, dict):
+                category_value = entry.category.get('value') or entry.category.get('name')
+            
+            if category_value and category_value in counts:
+                counts[category_value] += 1
         
         return counts
     

@@ -24,8 +24,11 @@ def _get_db_session_local():
     """延迟导入获取数据库会话工厂"""
     global _db_session_local
     if _db_session_local is None:
-        from main import get_db_session_local
-        _db_session_local = get_db_session_local()
+        try:
+            from main import get_db_session_local
+            _db_session_local = get_db_session_local()
+        except ImportError:
+            return None
     return _db_session_local
 
 
@@ -60,7 +63,6 @@ def get_storage_manager() -> DBStorageManager:
 
 def is_unlocked() -> bool:
     """检查是否已解锁"""
-    global _session_unlocked
     enc_manager = get_encryption_manager()
     return enc_manager.is_unlocked()
 
@@ -100,7 +102,7 @@ async def setup_page(request: Request):
     
     return templates.TemplateResponse(
         "setup.html",
-        {"request": request, "settings": settings}
+        {"request": request}
     )
 
 
@@ -121,7 +123,6 @@ async def setup_master_password(
             "setup.html",
             {
                 "request": request,
-                "settings": settings,
                 "error": "两次输入的密码不一致"
             }
         )
@@ -131,7 +132,6 @@ async def setup_master_password(
             "setup.html",
             {
                 "request": request,
-                "settings": settings,
                 "error": "密码长度至少为6位"
             }
         )
@@ -154,7 +154,7 @@ async def login_page(request: Request):
     
     return templates.TemplateResponse(
         "login.html",
-        {"request": request, "settings": settings}
+        {"request": request}
     )
 
 
@@ -173,7 +173,6 @@ async def login(request: Request, password: str = Form(...)):
             "login.html",
             {
                 "request": request,
-                "settings": settings,
                 "error": "密码错误"
             }
         )
@@ -217,7 +216,6 @@ async def dashboard(request: Request, category: Optional[str] = None, search: Op
         "dashboard.html",
         {
             "request": request,
-            "settings": settings,
             "entries": entries,
             "categories_count": categories_count,
             "total_count": total_count,
@@ -240,7 +238,6 @@ async def add_entry_page(request: Request):
         "entry_form.html",
         {
             "request": request,
-            "settings": settings,
             "entry": None,
             "PasswordCategory": PasswordCategory,
             "is_edit": False
@@ -301,7 +298,6 @@ async def edit_entry_page(request: Request, entry_id: str):
         "entry_form.html",
         {
             "request": request,
-            "settings": settings,
             "entry": entry,
             "PasswordCategory": PasswordCategory,
             "is_edit": True
@@ -358,7 +354,6 @@ async def view_entry(request: Request, entry_id: str):
         "view_entry.html",
         {
             "request": request,
-            "settings": settings,
             "entry": entry
         }
     )
@@ -381,7 +376,6 @@ async def delete_entry_confirm(request: Request, entry_id: str):
         "delete_confirm.html",
         {
             "request": request,
-            "settings": settings,
             "entry": entry
         }
     )

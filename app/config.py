@@ -3,6 +3,16 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 
 
+def get_database_url(
+    db_user: str,
+    db_password: str,
+    db_host: str,
+    db_port: int,
+    db_name: str
+) -> str:
+    return f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
+
+
 class Settings(BaseSettings):
     APP_NAME: str = "密码本管理器"
     APP_VERSION: str = "0.1.0"
@@ -25,10 +35,6 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "lsTiBCoLk3cWvQKMZ4Mq"
     DB_NAME: str = "ce"
     
-    @property
-    def DATABASE_URL(self) -> str:
-        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
-    
     model_config = {
         "env_file": ".env",
         "case_sensitive": True
@@ -37,6 +43,22 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    
+    @property
+    def DATABASE_URL(self) -> str:
+        return get_database_url(
+            self.DB_USER,
+            self.DB_PASSWORD,
+            self.DB_HOST,
+            self.DB_PORT,
+            self.DB_NAME
+        )
+    
+    def get_template_context(self) -> dict:
+        return {
+            "APP_NAME": self.APP_NAME,
+            "APP_VERSION": self.APP_VERSION,
+        }
 
 
 settings = Settings()

@@ -19,9 +19,10 @@ class Settings(BaseSettings):
     
     SESSION_SECRET_KEY: str = "your-super-secret-session-key-change-in-production"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True
+    }
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

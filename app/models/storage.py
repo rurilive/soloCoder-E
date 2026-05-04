@@ -170,7 +170,14 @@ class StorageManager:
         """
         entries = self._load_from_file()
         
-        target_category_value = category.value if isinstance(category, PasswordCategory) else category
+        target_category_value = None
+        if isinstance(category, PasswordCategory):
+            target_category_value = category.value
+        elif isinstance(category, str):
+            target_category_value = category
+        
+        if not isinstance(target_category_value, str):
+            return []
         
         result = []
         for entry in entries.values():
@@ -181,9 +188,11 @@ class StorageManager:
             elif isinstance(entry.category, str):
                 entry_category_value = entry.category
             elif hasattr(entry.category, 'value'):
-                entry_category_value = entry.category.value
+                val = entry.category.value
+                if isinstance(val, str):
+                    entry_category_value = val
             
-            if entry_category_value == target_category_value:
+            if isinstance(entry_category_value, str) and entry_category_value == target_category_value:
                 result.append(entry)
         
         result.sort(key=lambda x: x.updated_at, reverse=True)
@@ -205,11 +214,15 @@ class StorageManager:
             elif isinstance(entry.category, str):
                 category_value = entry.category
             elif hasattr(entry.category, 'value'):
-                category_value = entry.category.value
+                val = entry.category.value
+                if isinstance(val, str):
+                    category_value = val
             elif isinstance(entry.category, dict):
-                category_value = entry.category.get('value') or entry.category.get('name')
+                val = entry.category.get('value') or entry.category.get('name')
+                if isinstance(val, str):
+                    category_value = val
             
-            if category_value and category_value in counts:
+            if isinstance(category_value, str) and category_value in counts:
                 counts[category_value] += 1
         
         return counts

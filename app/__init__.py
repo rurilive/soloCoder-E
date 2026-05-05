@@ -40,26 +40,48 @@ def create_app(config_class=Config):
 
 
 def init_admin_user(app):
-    from app.models import User
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError, ProgrammingError
     
     admin_username = app.config.get('ADMIN_USERNAME', 'admin')
     admin_password = app.config.get('ADMIN_PASSWORD', 'Admin123!')
     
-    existing_admin = User.query.filter_by(username=admin_username).first()
-    if existing_admin:
-        return
+    try:
+        from app.models import User
+        existing_admin = User.query.filter_by(username=admin_username).first()
+        if existing_admin:
+            if not existing_admin.is_admin:
+                existing_admin.is_admin = True
+                db.session.commit()
+                app.logger.info(f'Admin user updated: {admin_username}')
+            return
+    except (OperationalError, ProgrammingError, AttributeError) as e:
+        app.logger.warning(f'Warning during admin user check: {e}')
+        try:
+            result = db.session.execute(text(
+                "SELECT id FROM users WHERE username = :username LIMIT 1"
+            ), {'username': admin_username})
+            if result.fetchone():
+                return
+        except Exception as e2:
+            app.logger.warning(f'Could not check for existing admin: {e2}')
+            return
     
-    admin = User(
-        username=admin_username,
-        is_verified=True,
-        verification_status='verified',
-        is_admin=True,
-        points=1000,
-        reputation_score=5.0
-    )
-    admin.set_password(admin_password)
-    
-    db.session.add(admin)
-    db.session.commit()
-    
-    app.logger.info(f'Admin user created: {admin_username}')
+    try:
+        admin = User(
+            username=admin_username,
+            is_verified=True,
+            verification_status='verified',
+            is_admin=True,
+            points=1000,
+            reputation_score=5.0
+        )
+        admin.set_password(admin_password)
+        
+        db.session.add(admin)
+        db.session.commit()
+        
+        app.logger.info(f'Admin user created: {admin_username}')
+    except Exception as e:
+        app.logger.warning(f'Could not create admin user (may be missing columns): {e}')
+        db.session.rollback()

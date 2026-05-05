@@ -17,5 +17,4 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@neighborhood.com'
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'Admin123!'

@@ -13,6 +13,7 @@ dependencies = [
     "flask-login>=0.6.3",
     "flask-wtf>=1.2.1",
     "werkzeug>=3.0.0",
+    "alembic>=1.16.5",
 ]
 
 [project.optional-dependencies]

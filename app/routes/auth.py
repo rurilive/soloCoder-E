@@ -18,7 +18,7 @@ def register():
         phone = request.form.get('phone')
         community_id = request.form.get('community_id')
         
-        if not all([username, email, password]):
+        if not all([username, password]):
             flash('请填写所有必填字段', 'error')
             return redirect(url_for('auth.register'))
         
@@ -26,13 +26,13 @@ def register():
             flash('用户名已存在', 'error')
             return redirect(url_for('auth.register'))
         
-        if User.query.filter_by(email=email).first():
+        if email and User.query.filter_by(email=email).first():
             flash('邮箱已被注册', 'error')
             return redirect(url_for('auth.register'))
         
         user = User(
             username=username,
-            email=email,
+            email=email if email else None,
             phone=phone,
             community_id=community_id if community_id else None
         )
@@ -54,14 +54,14 @@ def login():
         return redirect(url_for('main.index'))
     
     if request.method == 'POST':
-        email = request.form.get('email')
+        username = request.form.get('username')
         password = request.form.get('password')
         remember = request.form.get('remember')
         
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(username=username).first()
         
         if not user or not user.check_password(password):
-            flash('邮箱或密码错误', 'error')
+            flash('用户名或密码错误', 'error')
             return redirect(url_for('auth.login'))
         
         login_user(user, remember=bool(remember))

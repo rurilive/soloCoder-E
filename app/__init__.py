@@ -22,6 +22,7 @@ def create_app(config_class=Config):
     from app.routes.tool_lend import tool_lend
     from app.routes.dog_walk import dog_walk
     from app.routes.community import community
+    from app.routes.verification import verification
 
     app.register_blueprint(main)
     app.register_blueprint(auth)
@@ -29,6 +30,7 @@ def create_app(config_class=Config):
     app.register_blueprint(tool_lend)
     app.register_blueprint(dog_walk)
     app.register_blueprint(community)
+    app.register_blueprint(verification)
 
     with app.app_context():
         db.create_all()
@@ -51,6 +53,7 @@ def init_admin_user(app):
         username=admin_username,
         is_verified=True,
         verification_status='verified',
+        is_admin=True,
         points=1000,
         reputation_score=5.0
     )

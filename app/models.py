@@ -30,6 +30,8 @@ class User(db.Model, UserMixin):
     is_verified = db.Column(db.Boolean, default=False)
     verification_status = db.Column(db.String(20), default='pending')
     
+    is_admin = db.Column(db.Boolean, default=False)
+    
     points = db.Column(db.Integer, default=100)
     reputation_score = db.Column(db.Float, default=5.0)
     total_helps = db.Column(db.Integer, default=0)
@@ -45,12 +47,54 @@ class User(db.Model, UserMixin):
     dog_walks = db.relationship('DogWalk', backref='creator', lazy=True, foreign_keys='DogWalk.creator_id')
     helped_dog_walks = db.relationship('DogWalk', backref='helper', lazy=True, foreign_keys='DogWalk.helper_id')
     points_logs = db.relationship('PointsLog', backref='user', lazy=True, foreign_keys='PointsLog.user_id')
+    address_verifications = db.relationship('AddressVerification', backref='user', lazy=True, foreign_keys='AddressVerification.user_id')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class AddressVerification(db.Model):
+    __tablename__ = 'address_verifications'
+    
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    
+    DOCUMENT_TYPE_ID_CARD = 'id_card'
+    DOCUMENT_TYPE_PROPERTY_CERT = 'property_certificate'
+    DOCUMENT_TYPE_RENTAL_CONTRACT = 'rental_contract'
+    DOCUMENT_TYPE_UTILITY_BILL = 'utility_bill'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    document_type = db.Column(db.String(50), nullable=False)
+    document_number = db.Column(db.String(100), nullable=True)
+    document_image_url = db.Column(db.String(255), nullable=True)
+    
+    property_address = db.Column(db.String(255), nullable=True)
+    property_owner_name = db.Column(db.String(100), nullable=True)
+    
+    id_card_number = db.Column(db.String(20), nullable=True)
+    id_card_name = db.Column(db.String(100), nullable=True)
+    id_card_address = db.Column(db.String(255), nullable=True)
+    id_card_front_url = db.Column(db.String(255), nullable=True)
+    id_card_back_url = db.Column(db.String(255), nullable=True)
+    
+    additional_documents = db.Column(db.Text, nullable=True)
+    
+    status = db.Column(db.String(20), default=STATUS_PENDING)
+    admin_note = db.Column(db.Text, nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    reviewer = db.relationship('User', backref='reviews', lazy=True, foreign_keys='AddressVerification.reviewed_by')
 
 
 @login_manager.user_loader

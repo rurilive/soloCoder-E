@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}我的验证申请 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4>我的地址验证申请</h4>
+            <a href="{{ url_for('verification.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 提交新申请
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if verifications %}
+<div class="row">
+    {% for v in verifications %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="me-2">申请编号：#{{ v.id }}</span>
+                    <span class="text-muted small">
+                        提交时间：{{ v.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </span>
+                </div>
+                <div>
+                    {% if v.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">⏳ 待审核</span>
+                    {% elif v.status == 'approved' %}
+                        <span class="badge bg-success">✅ 已通过</span>
+                    {% elif v.status == 'rejected' %}
+                        <span class="badge bg-danger">❌ 已拒绝</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <strong>证明类型：</strong>
+                        {% if v.document_type == 'property_certificate' %}
+                            房产证
+                        {% elif v.document_type == 'rental_contract' %}
+                            房屋租赁合同
+                        {% elif v.document_type == 'utility_bill' %}
+                            水电费/物业费账单
+                        {% elif v.document_type == 'id_card' %}
+                            身份证
+                        {% else %}
+                            {{ v.document_type }}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8 mb-2">
+                        <strong>房产地址：</strong>
+                        {{ v.property_address or '未填写' }}
+                    </div>
+                    {% if v.property_owner_name %}
+                    <div class="col-md-4 mb-2">
+                        <strong>产权人：</strong>{{ v.property_owner_name }}
+                    </div>
+                    {% endif %}
+                    {% if v.id_card_name %}
+                    <div class="col-md-4 mb-2">
+                        <strong>姓名：</strong>{{ v.id_card_name }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if v.status != 'pending' %}
+                <div class="mt-3 pt-3 border-top">
+                    {% if v.reviewed_at %}
+                    <div class="text-muted small mb-2">
+                        审核时间：{{ v.reviewed_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    {% endif %}
+                    {% if v.admin_note %}
+                    <div class="alert {% if v.status == 'rejected' %}alert-danger{% else %}alert-info{% endif %}">
+                        <strong>审核说明：</strong>{{ v.admin_note }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <a href="{{ url_for('verification.detail', id=v.id) }}" class="btn btn-sm btn-outline-primary">
+                        查看详情
+                    </a>
+                    {% if v.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('verification.cancel', id=v.id) }}" 
+                          onsubmit="return confirm('确定要取消此验证申请吗？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            取消申请
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="text-muted mb-3" style="font-size: 3rem;">📋</div>
+        <h5 class="text-muted mb-3">暂无验证申请</h5>
+        <p class="text-muted mb-4">您还没有提交过地址验证申请</p>
+        <a href="{{ url_for('verification.create') }}" class="btn btn-primary">
+            提交验证申请
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -60,6 +60,13 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('verification.admin_list') }}">
+                                <span class="badge bg-danger">管理</span>
+                            </a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <span class="nav-link">
                                 <span class="point-badge">⭐ {{ current_user.points }} 积分</span>
@@ -70,6 +77,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.profile') }}">个人中心</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('verification.my_verifications') }}">地址验证</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">退出</a>

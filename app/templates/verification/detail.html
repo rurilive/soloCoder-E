@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}验证申请详情 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">验证申请详情 #{{ verification.id }}</h5>
+                <div>
+                    {% if verification.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">⏳ 待审核</span>
+                    {% elif verification.status == 'approved' %}
+                        <span class="badge bg-success">✅ 已通过</span>
+                    {% elif verification.status == 'rejected' %}
+                        <span class="badge bg-danger">❌ 已拒绝</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="text-muted small">申请人</label>
+                        <p class="fw-bold">{{ verification.user.username }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">提交时间</label>
+                        <p class="fw-bold">{{ verification.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">📋 证明类型</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">证明文件类型</label>
+                            <p class="fw-bold">
+                                {% if verification.document_type == 'property_certificate' %}
+                                    房产证
+                                {% elif verification.document_type == 'rental_contract' %}
+                                    房屋租赁合同
+                                {% elif verification.document_type == 'utility_bill' %}
+                                    水电费/物业费账单
+                                {% elif verification.document_type == 'id_card' %}
+                                    身份证
+                                {% else %}
+                                    {{ verification.document_type }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if verification.document_number %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">证件编号</label>
+                            <p class="fw-bold">{{ verification.document_number }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">🏠 房产信息</h6>
+                    <div class="row">
+                        {% if verification.property_address %}
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">房产地址</label>
+                            <p class="fw-bold">{{ verification.property_address }}</p>
+                        </div>
+                        {% endif %}
+                        {% if verification.property_owner_name %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">产权人/承租人姓名</label>
+                            <p class="fw-bold">{{ verification.property_owner_name }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">🆔 身份证信息</h6>
+                    <div class="row">
+                        {% if verification.id_card_name %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">姓名</label>
+                            <p class="fw-bold">{{ verification.id_card_name }}</p>
+                        </div>
+                        {% endif %}
+                        {% if verification.id_card_number %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">身份证号</label>
+                            <p class="fw-bold">{{ verification.id_card_number }}</p>
+                        </div>
+                        {% endif %}
+                        {% if verification.id_card_address %}
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">身份证地址</label>
+                            <p class="fw-bold">{{ verification.id_card_address }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">📎 证明材料</h6>
+                    <div class="row">
+                        {% if verification.document_image_url %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small d-block">证明文件照片</label>
+                            <a href="{{ verification.document_image_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                查看图片
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if verification.id_card_front_url %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small d-block">身份证正面</label>
+                            <a href="{{ verification.id_card_front_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                查看图片
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if verification.id_card_back_url %}
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small d-block">身份证背面</label>
+                            <a href="{{ verification.id_card_back_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                查看图片
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if verification.additional_documents %}
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">📝 补充说明</h6>
+                    <p>{{ verification.additional_documents }}</p>
+                </div>
+                {% endif %}
+
+                {% if verification.status != 'pending' %}
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">📋 审核信息</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">审核时间</label>
+                            <p class="fw-bold">
+                                {% if verification.reviewed_at %}
+                                    {{ verification.reviewed_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">审核人</label>
+                            <p class="fw-bold">
+                                {% if verification.reviewer %}
+                                    {{ verification.reviewer.username }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if verification.admin_note %}
+                        <div class="col-12">
+                            <div class="alert {% if verification.status == 'rejected' %}alert-danger{% else %}alert-info{% endif %}">
+                                <strong>审核说明：</strong>{{ verification.admin_note }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if current_user.is_admin and verification.status == 'pending' %}
+                <div class="mb-4 border-top pt-4">
+                    <h6 class="mb-3">🔧 审核操作</h6>
+                    <form method="POST" action="{{ url_for('verification.admin_review', id=verification.id) }}">
+                        <div class="mb-3">
+                            <label for="admin_note" class="form-label">审核说明（拒绝时必填）</label>
+                            <textarea class="form-control" id="admin_note" name="admin_note" rows="3"
+                                      placeholder="请填写审核说明..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success">
+                                ✅ 通过审核
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                ❌ 拒绝申请
+                            </button>
+                            <a href="{{ url_for('verification.admin_list') }}" class="btn btn-secondary">
+                                返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('verification.admin_list') }}" class="btn btn-secondary">返回审核列表</a>
+                    {% else %}
+                    <a href="{{ url_for('verification.my_verifications') }}" class="btn btn-secondary">返回我的申请</a>
+                    {% endif %}
+                    {% if verification.status == 'pending' and not current_user.is_admin %}
+                    <form method="POST" action="{{ url_for('verification.cancel', id=verification.id) }}"
+                          onsubmit="return confirm('确定要取消此验证申请吗？');">
+                        <button type="submit" class="btn btn-outline-danger">
+                            取消申请
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

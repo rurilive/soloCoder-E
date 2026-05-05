@@ -97,43 +97,39 @@
             </div>
         </div>
 
-        {% if current_user.community_id and not current_user.is_verified and current_user.verification_status != 'pending' %}
-        <div class="card mb-4 border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h6 class="mb-0">小区认证</h6>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">地址验证</h5>
+                <a href="{{ url_for('verification.my_verifications') }}" class="btn btn-sm btn-outline-primary">
+                    管理我的验证
+                </a>
             </div>
             <div class="card-body">
-                <p class="mb-3">完成小区认证后，您可以：</p>
-                <ul class="mb-3">
-                    <li>发布和参与本小区的拼团</li>
-                    <li>发布和借用户外工具</li>
-                    <li>发布和参与遛狗互助</li>
-                    <li>获得更多邻里信任</li>
-                </ul>
-                <form method="POST" action="{{ url_for('auth.verify_community') }}">
-                    <button type="submit" class="btn btn-warning">提交认证申请</button>
-                </form>
+                {% if current_user.is_verified %}
+                <div class="alert alert-success mb-0">
+                    <strong>✅ 已通过地址验证</strong>
+                    <p class="mb-0 mt-2">您已完成地址验证，可以使用所有功能！</p>
+                </div>
+                {% else %}
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-3">完成地址验证后，您可以：</p>
+                        <ul class="mb-3">
+                            <li>发布和参与本小区的拼团</li>
+                            <li>发布和借用户外工具</li>
+                            <li>发布和参与遛狗互助</li>
+                            <li>获得更多邻里信任</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('verification.create') }}" class="btn btn-primary">
+                            提交地址验证
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% elif current_user.verification_status == 'pending' %}
-        <div class="card mb-4 border-info">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0">认证申请</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-0">您的小区认证申请正在审核中，请耐心等待管理员审核。</p>
-            </div>
-        </div>
-        {% elif current_user.is_verified %}
-        <div class="card mb-4 border-success">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0">认证状态</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-0">✅ 您已完成小区认证，可以使用所有功能！</p>
-            </div>
-        </div>
-        {% endif %}
 
         <div class="card">
             <div class="card-header">

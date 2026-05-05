@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}地址验证审核 - 管理后台{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4>地址验证审核管理</h4>
+        <p class="text-muted">审核用户提交的地址验证申请</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('verification.admin_list') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="status" class="form-label">筛选状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">全部</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>待审核</option>
+                    <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>已通过</option>
+                    <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>已拒绝</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">筛选</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if verifications %}
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">验证申请列表</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>申请人</th>
+                    <th>证明类型</th>
+                    <th>房产地址</th>
+                    <th>状态</th>
+                    <th>提交时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in verifications %}
+                <tr>
+                    <td>#{{ v.id }}</td>
+                    <td>{{ v.user.username }}</td>
+                    <td>
+                        {% if v.document_type == 'property_certificate' %}
+                            房产证
+                        {% elif v.document_type == 'rental_contract' %}
+                            房屋租赁合同
+                        {% elif v.document_type == 'utility_bill' %}
+                            水电费/物业费账单
+                        {% elif v.document_type == 'id_card' %}
+                            身份证
+                        {% else %}
+                            {{ v.document_type }}
+                        {% endif %}
+                    </td>
+                    <td>{{ v.property_address or '-' }}</td>
+                    <td>
+                        {% if v.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">⏳ 待审核</span>
+                        {% elif v.status == 'approved' %}
+                            <span class="badge bg-success">✅ 已通过</span>
+                        {% elif v.status == 'rejected' %}
+                            <span class="badge bg-danger">❌ 已拒绝</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ v.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('verification.detail', id=v.id) }}" class="btn btn-sm btn-outline-primary">
+                            查看
+                        </a>
+                        {% if v.status == 'pending' %}
+                        <form method="POST" action="{{ url_for('verification.admin_review', id=v.id) }}" class="d-inline">
+                            <button type="submit" name="action" value="approve" class="btn btn-sm btn-success"
+                                    onclick="return confirm('确定通过此验证申请吗？');">
+                                通过
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('verification.admin_list', page=pagination.prev_num, status=current_status) }}">
+                        上一页
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">上一页</span>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == pagination.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('verification.admin_list', page=page_num, status=current_status) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('verification.admin_list', page=pagination.next_num, status=current_status) }}">
+                        下一页
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">下一页</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="text-muted mb-3" style="font-size: 3rem;">📋</div>
+        <h5 class="text-muted mb-3">暂无验证申请</h5>
+        <p class="text-muted">当前没有需要审核的地址验证申请</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

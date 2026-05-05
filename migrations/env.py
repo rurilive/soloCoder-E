@@ -10,7 +10,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from app import create_app, db
-from app.models import User, Community, GroupBuy, GroupBuyParticipant, Tool, ToolLoan, DogWalk, PointsLog
+from app.models import User, Community, GroupBuy, GroupBuyParticipant, Tool, ToolLoan, DogWalk, PointsLog, AddressVerification
 
 app = create_app()
 

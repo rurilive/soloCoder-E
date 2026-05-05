@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}提交地址验证 - 邻里互助平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">提交地址验证申请</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    请上传您的居住证明材料，以便管理员审核您的小区身份。
+                    审核通过后，您将获得完整的平台功能权限。
+                </p>
+
+                <form method="POST" action="{{ url_for('verification.create') }}" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">📋 证明类型</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="document_type" class="form-label">证明文件类型 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="document_type" name="document_type" required>
+                                    <option value="">-- 请选择证明类型 --</option>
+                                    <option value="property_certificate">房产证</option>
+                                    <option value="rental_contract">房屋租赁合同</option>
+                                    <option value="utility_bill">水电费/物业费账单</option>
+                                    <option value="id_card">身份证（地址匹配）</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="document_number" class="form-label">证件编号</label>
+                                <input type="text" class="form-control" id="document_number" name="document_number" 
+                                       placeholder="如有请填写">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">🏠 房产信息</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="property_address" class="form-label">房产地址</label>
+                                <input type="text" class="form-control" id="property_address" name="property_address"
+                                       placeholder="请填写详细地址，如：XX小区XX号楼XX单元XX室">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="property_owner_name" class="form-label">产权人/承租人姓名</label>
+                                <input type="text" class="form-control" id="property_owner_name" name="property_owner_name"
+                                       placeholder="请填写房产证或租赁合同上的姓名">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">🆔 身份证信息</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_card_name" class="form-label">姓名</label>
+                                <input type="text" class="form-control" id="id_card_name" name="id_card_name"
+                                       placeholder="请填写身份证姓名">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_card_number" class="form-label">身份证号</label>
+                                <input type="text" class="form-control" id="id_card_number" name="id_card_number"
+                                       placeholder="请填写身份证号码">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="id_card_address" class="form-label">身份证地址</label>
+                                <input type="text" class="form-control" id="id_card_address" name="id_card_address"
+                                       placeholder="请填写身份证上的地址">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">📎 上传证明材料</h6>
+                        <div class="alert alert-info small">
+                            <strong>支持的格式：</strong> JPG、PNG、GIF、PDF，单个文件不超过16MB
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="document_image" class="form-label">
+                                    证明文件照片（房产证/合同/账单）
+                                </label>
+                                <input type="file" class="form-control" id="document_image" name="document_image"
+                                       accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                <div class="form-text">请上传清晰的证明文件照片</div>
+                            </div>
+                            <div class="col-md-6 mb-3"></div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_card_front" class="form-label">身份证正面照片</label>
+                                <input type="file" class="form-control" id="id_card_front" name="id_card_front"
+                                       accept=".jpg,.jpeg,.png,.gif,.pdf">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_card_back" class="form-label">身份证背面照片</label>
+                                <input type="file" class="form-control" id="id_card_back" name="id_card_back"
+                                       accept=".jpg,.jpeg,.png,.gif,.pdf">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">📝 补充说明</h6>
+                        <div class="mb-3">
+                            <label for="additional_documents" class="form-label">其他补充说明</label>
+                            <textarea class="form-control" id="additional_documents" name="additional_documents" 
+                                      rows="3" placeholder="如有其他需要说明的事项，请在此填写"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('verification.my_verifications') }}" class="btn btn-secondary">返回</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 提交验证申请
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

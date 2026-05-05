@@ -117,3 +117,33 @@ def verify_community():
         flash('请先选择小区', 'error')
     
     return redirect(url_for('auth.profile'))
+
+
+@auth.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    old_password = request.form.get('old_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if not all([old_password, new_password, confirm_password]):
+        flash('请填写所有密码字段', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    if not current_user.check_password(old_password):
+        flash('原密码错误', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    if new_password != confirm_password:
+        flash('两次输入的新密码不一致', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    if len(new_password) < 6:
+        flash('新密码长度不能少于6位', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    current_user.set_password(new_password)
+    db.session.commit()
+    
+    flash('密码修改成功', 'success')
+    return redirect(url_for('auth.profile'))
